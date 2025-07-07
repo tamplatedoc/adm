@@ -1,52 +1,122 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin - Kelola Cerita</title>
-
-  <!-- Firebase Scripts -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi UTBK - Penalaran Umum</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .question {
+      background: #fff;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #2c3e50;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .result {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .explanation {
+      font-size: 14px;
+      margin-top: 10px;
+      color: #555;
+    }
+  </style>
 </head>
 <body>
-  <header>Admin Kelola Cerita</header>
+  <h1>Simulasi UTBK: Penalaran Umum (30 Soal)</h1>
 
-  <!-- Form PIN -->
-  <div id="pin-form">
-    <label for="pin">Masukkan PIN:</label>
-    <input type="password" id="pin" required />
-    <button id="submit-pin">Masuk</button>
-  </div>
+  <form id="quizForm">
+    <div id="questionsContainer"></div>
+    <button type="submit">Cek Jawaban</button>
+  </form>
 
-  <!-- Konten Admin -->
-  <main id="admin-content" style="display: none;">
-    <form id="form-cerita">
-      <input type="hidden" id="current-key" />
-      <label for="judul">Judul Cerita</label>
-      <input type="text" id="judul" required />
+  <div class="result" id="score"></div>
 
-      <label for="genre">Genre</label>
-      <input type="text" id="genre" required />
+  <script>
+    const questions = [
+      {q:"Semua siswa disiplin. Budi adalah siswa.",a:"Budi disiplin.",explanation:"Silogisme kategorial.",options:["Budi tidak disiplin.","Budi disiplin.","Budi bukan siswa.","Tidak bisa disimpulkan."]},
+      {q:"Jika hujan maka jalanan basah. Hujan turun.",a:"Jalanan basah.",explanation:"Modus ponens.",options:["Jalanan kering.","Tidak hujan.","Jalanan basah.","Tidak ada hubungan."]},
+      {q:"Semua burung bisa terbang. Penguin adalah burung.",a:"Tidak bisa disimpulkan.",explanation:"Pengecualian: penguin tidak bisa terbang meski burung.",options:["Penguin bisa terbang.","Penguin tidak bisa terbang.","Penguin bukan burung.","Tidak bisa disimpulkan."]},
+      {q:"Jika belajar maka lulus. Tidak lulus.",a:"Tidak belajar.",explanation:"Modus tollens.",options:["Belajar.","Lulus.","Tidak belajar.","Tidak bisa disimpulkan."]},
+      {q:"Semua manusia bernapas. Ali adalah manusia.",a:"Ali bernapas.",explanation:"Silogisme umum.",options:["Ali tidak bernapas.","Ali bukan manusia.","Ali bernapas.","Tidak bisa disimpulkan."]},
+      {q:"Jika lampu menyala maka ruangan terang. Lampu tidak menyala.",a:"Tidak bisa disimpulkan.",explanation:"Implikasi tidak berlaku jika premis pertama salah.",options:["Ruangan gelap.","Ruangan terang.","Lampu menyala.","Tidak bisa disimpulkan."]},
+      {q:"Semua mahasiswa wajib skripsi. Tono mahasiswa.",a:"Tono wajib skripsi.",explanation:"Silogisme.",options:["Tono tidak skripsi.","Tono bukan mahasiswa.","Tono wajib skripsi.","Tidak bisa disimpulkan."]},
+      {q:"Jika baterai habis maka HP mati. HP menyala.",a:"Baterai tidak habis.",explanation:"Modus tollens.",options:["Baterai habis.","HP mati.","Baterai tidak habis.","Tidak bisa disimpulkan."]},
+      {q:"Semua hewan bisa bergerak. Batu bukan hewan.",a:"Tidak bisa disimpulkan.",explanation:"Tidak ada hubungan langsung.",options:["Batu bisa bergerak.","Batu tidak bisa bergerak.","Tidak bisa disimpulkan.","Batu adalah hewan."]},
+      {q:"Semua programmer bisa coding. Rani bisa coding.",a:"Tidak bisa disimpulkan.",explanation:"Bisa saja Rani bukan programmer.",options:["Rani programmer.","Rani bukan programmer.","Tidak bisa disimpulkan.","Rani tidak bisa coding."]},
+      {q:"Jika lapar maka makan. Tidak makan.",a:"Tidak lapar.",explanation:"Modus tollens.",options:["Lapar.","Tidak lapar.","Makan.","Tidak bisa disimpulkan."]},
+      {q:"Semua buku di rak A berwarna merah. Buku X ada di rak A.",a:"Buku X berwarna merah.",explanation:"Silogisme kategorial.",options:["Buku X biru.","Buku X bukan dari rak A.","Buku X berwarna merah.","Tidak bisa disimpulkan."]},
+      {q:"Jika motor rusak maka tidak bisa jalan. Motor tidak jalan.",a:"Tidak bisa disimpulkan.",explanation:"Bisa saja bensin habis.",options:["Motor rusak.","Motor normal.","Tidak bisa disimpulkan.","Motor tidak rusak."]},
+      {q:"Semua kucing berkaki empat. Oren adalah kucing.",a:"Oren berkaki empat.",explanation:"Silogisme kategorial.",options:["Oren tidak berkaki empat.","Oren bukan kucing.","Oren berkaki empat.","Tidak bisa disimpulkan."]},
+      {q:"Jika tidur larut maka bangun siang. Saya bangun pagi.",a:"Saya tidak tidur larut.",explanation:"Modus tollens.",options:["Saya tidur larut.","Saya tidak tidur larut.","Saya tidak tidur.","Tidak bisa disimpulkan."]},
+      {q:"Semua siswa memakai seragam. Dina tidak memakai seragam.",a:"Dina bukan siswa.",explanation:"Silogisme negatif.",options:["Dina siswa.","Dina bukan siswa.","Dina memakai seragam.","Tidak bisa disimpulkan."]},
+      {q:"Jika A maka B. B benar.",a:"Tidak bisa disimpulkan.",explanation:"Konversi tidak selalu valid.",options:["A benar.","A salah.","Tidak bisa disimpulkan.","A dan B salah."]},
+      {q:"Semua tanaman butuh air. Kaktus adalah tanaman.",a:"Kaktus butuh air.",explanation:"Silogisme.",options:["Kaktus tidak butuh air.","Kaktus butuh air.","Kaktus bukan tanaman.","Tidak bisa disimpulkan."]},
+      {q:"Jika bermain HP terus maka mata lelah. Mata tidak lelah.",a:"Tidak bermain HP terus.",explanation:"Modus tollens.",options:["Mata lelah.","Bermain HP terus.","Tidak bermain HP terus.","Tidak bisa disimpulkan."]},
+      {q:"Semua pelajar punya kartu pelajar. Budi tidak punya kartu.",a:"Budi bukan pelajar.",explanation:"Silogisme negatif.",options:["Budi pelajar.","Budi bukan pelajar.","Tidak bisa disimpulkan.","Budi punya kartu pelajar."]},
+      {q:"Jika kamu jujur maka kamu dipercaya. Kamu dipercaya.",a:"Tidak bisa disimpulkan.",explanation:"Tidak semua yang dipercaya pasti jujur.",options:["Kamu jujur.","Kamu tidak jujur.","Tidak bisa disimpulkan.","Kamu bohong."]},
+      {q:"Semua komputer memiliki prosesor. Laptop adalah komputer.",a:"Laptop memiliki prosesor.",explanation:"Silogisme.",options:["Laptop tidak memiliki prosesor.","Laptop bukan komputer.","Laptop memiliki prosesor.","Tidak bisa disimpulkan."]},
+      {q:"Jika olahraga maka sehat. Tidak sehat.",a:"Tidak olahraga.",explanation:"Modus tollens.",options:["Olahraga.","Tidak olahraga.","Tidak bisa disimpulkan.","Tetap sehat."]},
+      {q:"Semua ikan hidup di air. Lele adalah ikan.",a:"Lele hidup di air.",explanation:"Silogisme.",options:["Lele hidup di darat.","Lele hidup di air.","Lele bukan ikan.","Tidak bisa disimpulkan."]},
+      {q:"Jika A maka B. Tidak A.",a:"Tidak bisa disimpulkan.",explanation:"Implikasi tidak berlaku mundur.",options:["Tidak B.","Tidak A.","Tidak bisa disimpulkan.","B."]},
+      {q:"Semua dosen bergelar S2. Pak Roni bergelar S1.",a:"Pak Roni bukan dosen.",explanation:"Silogisme negatif.",options:["Pak Roni dosen.","Pak Roni bukan dosen.","Pak Roni tidak bergelar.","Tidak bisa disimpulkan."]},
+      {q:"Jika libur maka jalan macet. Jalan tidak macet.",a:"Tidak libur.",explanation:"Modus tollens.",options:["Libur.","Tidak libur.","Tidak bisa disimpulkan.","Macet tetap."]},
+      {q:"Semua siswa membaca buku. Lisa tidak membaca buku.",a:"Lisa bukan siswa.",explanation:"Silogisme negatif.",options:["Lisa siswa.","Lisa bukan siswa.","Tidak bisa disimpulkan.","Lisa membaca buku."]},
+      {q:"Jika bensin habis maka mobil mogok. Mobil mogok.",a:"Tidak bisa disimpulkan.",explanation:"Bisa mogok karena sebab lain.",options:["Bensin habis.","Bensin penuh.","Tidak bisa disimpulkan.","Tidak mogok."]},
+      {q:"Semua buah mengandung vitamin. Apel adalah buah.",a:"Apel mengandung vitamin.",explanation:"Silogisme.",options:["Apel tidak mengandung vitamin.","Apel bukan buah.","Apel mengandung vitamin.","Tidak bisa disimpulkan."]}
+    ];
 
-      <label for="isi">Isi Cerita</label>
-      <textarea id="isi" required></textarea>
+    const container = document.getElementById("questionsContainer");
+    questions.forEach((question, index) => {
+      const div = document.createElement("div");
+      div.className = "question";
+      div.innerHTML = `<p><strong>${index + 1}. ${question.q}</strong></p>` +
+        question.options.map(opt => `
+          <label><input type="radio" name="q${index}" value="${opt}"> ${opt}</label><br>`).join("") +
+        `<div class="explanation" id="ex${index}"></div>`;
+      container.appendChild(div);
+    });
 
-      <label for="gambar">Cover Cerita (gambar URL atau file)</label>
-      <input type="file" id="gambar" accept="image/*" />
-
-      <button type="submit">Simpan Cerita</button>
-    </form>
-
-    <input type="text" id="search" placeholder="Cari judul atau genre" />
-    <div class="cerita-list" id="cerita-list"></div>
-  </main>
-
-  <footer>
-    &copy; 2025 Admin Cerita Digital | <a href="#">Kebijakan</a> | <a href="#">Kontak</a>
-  </footer>
-
-
+    document.getElementById("quizForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      let score = 0;
+      questions.forEach((question, index) => {
+        const selected = document.querySelector(`input[name='q${index}']:checked`);
+        const exp = document.getElementById(`ex${index}`);
+        if (selected && selected.value === question.a) {
+          score++;
+          exp.innerHTML = `✔ Jawaban benar!<br><em>${question.explanation}</em>`;
+          exp.style.color = "green";
+        } else {
+          exp.innerHTML = `✘ Jawaban salah! Jawaban benar: <strong>${question.a}</strong><br><em>${question.explanation}</em>`;
+          exp.style.color = "red";
+        }
+      });
+      document.getElementById("score").textContent = `Skor Kamu: ${score} / ${questions.length}`;
+    });
+  </script>
 </body>
 </html>
