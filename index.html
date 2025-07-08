@@ -5,37 +5,147 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel</title>
   <link rel="icon" href="favicon.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Arial', sans-serif; background: #111; color: #eee; padding: 20px; }
-    h1 { color: #00e676; }
-    .login, .panel { max-width: 600px; margin: auto; }
-    input, textarea { width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: none; }
-    button { padding: 10px 16px; background: #00e676; color: black; border: none; border-radius: 5px; cursor: pointer; }
-    .card { background: #1e1e1e; padding: 10px; margin: 10px 0; border-radius: 6px; }
+    :root {
+      --primary: #4caf50; /* Hijau Muda */
+      --secondary: #2196f3; /* Biru */
+      --dark: #1a1a2e; /* Gelap */
+      --light: #ffffff; /* Putih */
+      --border-color: #ff5252; /* Merah Menyala */
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(to bottom right, #ff1744, #9c27b0, #1976d2);
+      color: var(--light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    header, footer {
+      text-align: center;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: var(--light);
+      margin-bottom: 10px;
+    }
+
+    .login, .panel {
+      max-width: 600px;
+      margin: auto;
+      background: rgba(26, 26, 46, 0.85);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px var(--border-color);
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--light);
+    }
+
+    button {
+      padding: 10px 16px;
+      background: var(--primary);
+      color: black;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: var(--secondary);
+    }
+
+    .card {
+      background: #1e1e1e;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+    }
+
+    .cover {
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      margin: 1rem auto;
+      border-radius: 12px;
+      box-shadow: 0 0 15px var(--border-color);
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .upload-btn {
+      background: var(--primary);
+      color: var(--light);
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      padding: 10px;
+      transition: 0.3s;
+    }
+
+    .upload-btn:hover {
+      background: var(--secondary);
+    }
   </style>
 </head>
 <body>
+  <header>
+    <h1>Admin Panel</h1>
+  </header>
+
   <div class="login" id="login-box">
-    <h1>Login Admin</h1>
+    <h2>Login Admin</h2>
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="password" placeholder="Password">
     <button onclick="loginAdmin()">Login</button>
   </div>
 
   <div class="panel" id="admin-panel" style="display:none">
-    <h1>Admin Panel</h1>
-
-    <h3>➕ Tambah Cerita</h3>
+    <h2>➕ Tambah Cerita</h2>
     <input id="judul" placeholder="Judul Cerita">
     <input id="genre" placeholder="Genre">
     <textarea id="isi" rows="5" placeholder="Isi cerita chapter 1..."></textarea>
-    <input id="gambar-url" placeholder="URL Gambar Cover">
+    <input type="file" id="gambar-file" accept="image/*">
+    <input id="gambar-url" placeholder="URL Gambar Cover (opsional)">
     <button onclick="tambahCerita()">Simpan Cerita</button>
 
     <h3>🗑 Hapus Komentar</h3>
     <input id="id-cerita" placeholder="ID Cerita">
     <div id="komentar-list"></div>
+    <button onclick="goBack()">Kembali ke Beranda</button>
   </div>
+
+  <footer>
+    &copy; 2024 Perpustakaan Digital
+  </footer>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -71,7 +181,20 @@
       const genre = document.getElementById('genre').value;
       const isi = document.getElementById('isi').value;
       const gambarUrl = document.getElementById('gambar-url').value;
-      firestore.collection("koleksi").add({ judul, genre, isi, gambarUrl }).then(() => alert("Cerita ditambahkan"));
+
+      // Upload image from file input
+      const fileInput = document.getElementById('gambar-file');
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const storageRef = firebase.storage().ref(`images/${file.name}`);
+        storageRef.put(file).then(() => {
+          storageRef.getDownloadURL().then(url => {
+            firestore.collection("koleksi").add({ judul, genre, isi, gambarUrl: url }).then(() => alert("Cerita ditambahkan"));
+          });
+        });
+      } else {
+        firestore.collection("koleksi").add({ judul, genre, isi, gambarUrl }).then(() => alert("Cerita ditambahkan"));
+      }
     }
 
     document.getElementById('id-cerita').addEventListener('change', function() {
@@ -97,6 +220,10 @@
         }
       });
     });
+
+    function goBack() {
+      window.location.href = 'index.html'; // Ganti dengan URL beranda Anda
+    }
   </script>
 </body>
 </html>
