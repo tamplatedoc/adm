@@ -7,97 +7,112 @@
   <link rel="icon" href="favicon.png" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <script type="module">
-    // Firebase SDK modular via CDN (ESM build)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getDatabase, ref as dbRef, get, child, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getDatabase, ref as dbRef, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
-      authDomain: "tamplatedoc.firebaseapp.com",
-      databaseURL: "https://tamplatedoc-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "tamplatedoc",
-      storageBucket: "tamplatedoc.appspot.com",
-      messagingSenderId: "264966107720",
-      appId: "1:264966107720:web:da19f6109e71390740de7d",
-      measurementId: "G-PFK8VQBFCV"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
+    authDomain: "tamplatedoc.firebaseapp.com",
+    databaseURL: "https://tamplatedoc-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "tamplatedoc",
+    storageBucket: "tamplatedoc.firebasestorage.app", // ✅ updated here
+    messagingSenderId: "264966107720",
+    appId: "1:264966107720:web:da19f6109e71390740de7d",
+    measurementId: "G-PFK8VQBFCV"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const firestore = getFirestore(app);
-    const realtimeDB = getDatabase(app);
-    const storage = getStorage(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const firestore = getFirestore(app);
+  const realtimeDB = getDatabase(app);
+  const storage = getStorage(app); // ✅ will use firebasestorage.app
 
-    window.loginAdmin = function () {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      signInWithEmailAndPassword(auth, email, password).then(() => {
+  window.loginAdmin = function () {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
         document.getElementById('login-box').style.display = 'none';
         document.getElementById('admin-panel').style.display = 'block';
-      }).catch(err => alert("Login gagal: " + err.message));
-    };
+      })
+      .catch(err => alert("Login gagal: " + err.message));
+  };
 
-    window.tambahCerita = function () {
-      const judul = document.getElementById('judul').value;
-      const genre = document.getElementById('genre').value;
-      const isi = document.getElementById('isi').value;
-      const gambarUrlManual = document.getElementById('gambar-url').value;
-      const fileInput = document.getElementById('gambar-file');
+  window.tambahCerita = function () {
+    const judul = document.getElementById('judul').value;
+    const genre = document.getElementById('genre').value;
+    const isi = document.getElementById('isi').value;
+    const gambarUrlManual = document.getElementById('gambar-url').value;
+    const fileInput = document.getElementById('gambar-file');
 
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const imgRef = storageRef(storage, 'images/' + file.name);
-        uploadBytes(imgRef, file).then(() => getDownloadURL(imgRef)).then((url) => {
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      const uniqueName = `${crypto.randomUUID()}_${file.name}`;
+      const imgRef = storageRef(storage, 'images/' + uniqueName);
+
+      uploadBytes(imgRef, file)
+        .then(() => getDownloadURL(imgRef))
+        .then((url) => {
           return addDoc(collection(firestore, "koleksi"), {
-            judul, genre, isi, gambarUrl: url
+            judul,
+            genre,
+            isi,
+            gambarUrl: url
           });
-        }).then(() => alert("Cerita berhasil ditambahkan dengan gambar upload"))
-          .catch(err => alert("Gagal menyimpan cerita: " + err.message));
-      } else {
-        addDoc(collection(firestore, "koleksi"), {
-          judul, genre, isi, gambarUrl: gambarUrlManual
-        }).then(() => alert("Cerita ditambahkan tanpa gambar upload"))
-          .catch(err => alert("Gagal menyimpan cerita: " + err.message));
-      }
-    };
+        })
+        .then(() => alert("Cerita berhasil ditambahkan dengan gambar upload"))
+        .catch(err => alert("Gagal menyimpan cerita: " + err.message));
+    } else {
+      addDoc(collection(firestore, "koleksi"), {
+        judul,
+        genre,
+        isi,
+        gambarUrl: gambarUrlManual
+      })
+        .then(() => alert("Cerita ditambahkan tanpa gambar upload"))
+        .catch(err => alert("Gagal menyimpan cerita: " + err.message));
+    }
+  };
 
-    document.addEventListener("DOMContentLoaded", function () {
-      document.getElementById('id-cerita').addEventListener('change', function () {
-        const id = this.value;
-        const list = document.getElementById('komentar-list');
-        list.innerHTML = 'Memuat...';
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById('id-cerita').addEventListener('change', function () {
+      const id = this.value;
+      const list = document.getElementById('komentar-list');
+      list.innerHTML = 'Memuat...';
 
-        get(dbRef(realtimeDB, `komentar/${id}`)).then(snapshot => {
-          const data = snapshot.val();
-          list.innerHTML = '';
-          if (data) {
-            Object.entries(data).forEach(([key, val]) => {
-              const div = document.createElement('div');
-              div.className = 'card';
-              div.textContent = val.teks || '';
-              const btn = document.createElement('button');
-              btn.textContent = 'Hapus';
-              btn.onclick = () => {
-                remove(dbRef(realtimeDB, `komentar/${id}/${key}`));
-                div.remove();
-              };
-              div.appendChild(btn);
-              list.appendChild(div);
-            });
-          } else {
-            list.textContent = 'Tidak ada komentar';
-          }
-        });
+      get(dbRef(realtimeDB, `komentar/${id}`)).then(snapshot => {
+        const data = snapshot.val();
+        list.innerHTML = '';
+        if (data) {
+          Object.entries(data).forEach(([key, val]) => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.textContent = val.teks || '';
+            const btn = document.createElement('button');
+            btn.textContent = 'Hapus';
+            btn.onclick = () => {
+              remove(dbRef(realtimeDB, `komentar/${id}/${key}`));
+              div.remove();
+            };
+            div.appendChild(btn);
+            list.appendChild(div);
+          });
+        } else {
+          list.textContent = 'Tidak ada komentar';
+        }
       });
     });
+  });
 
-    window.goBack = function () {
-      window.location.href = 'index.html';
-    };
-  </script>
+  window.goBack = function () {
+    window.location.href = 'index.html';
+  };
+</script>
+
   <style>
     /* CSS tidak berubah dari versi kamu */
     :root {
