@@ -8,11 +8,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #4caf50; /* Hijau Muda */
-      --secondary: #2196f3; /* Biru */
-      --dark: #1a1a2e; /* Gelap */
-      --light: #ffffff; /* Putih */
-      --border-color: #ff5252; /* Merah Menyala */
+      --primary: #4caf50;
+      --secondary: #2196f3;
+      --dark: #1a1a2e;
+      --light: #ffffff;
+      --border-color: #ff5252;
     }
 
     * {
@@ -147,10 +147,12 @@
     &copy; 2024 Perpustakaan Digital
   </footer>
 
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -166,6 +168,7 @@
     const auth = firebase.auth();
     const firestore = firebase.firestore();
     const realtimeDB = firebase.database();
+    const storage = firebase.storage();
 
     function loginAdmin() {
       const email = document.getElementById('email').value;
@@ -180,24 +183,27 @@
       const judul = document.getElementById('judul').value;
       const genre = document.getElementById('genre').value;
       const isi = document.getElementById('isi').value;
-      const gambarUrl = document.getElementById('gambar-url').value;
+      const gambarUrlManual = document.getElementById('gambar-url').value;
 
-      // Upload image from file input
       const fileInput = document.getElementById('gambar-file');
       if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        const storageRef = firebase.storage().ref(`images/${file.name}`);
-        storageRef.put(file).then(() => {
-          storageRef.getDownloadURL().then(url => {
-            firestore.collection("koleksi").add({ judul, genre, isi, gambarUrl: url }).then(() => alert("Cerita ditambahkan"));
-          });
-        });
+        const ref = storage.ref('images/' + file.name);
+        ref.put(file).then(snapshot => {
+          return ref.getDownloadURL();
+        }).then(url => {
+          return firestore.collection('koleksi').add({ judul, genre, isi, gambarUrl: url });
+        }).then(() => {
+          alert("Cerita berhasil ditambahkan dengan gambar upload");
+        }).catch(err => alert("Gagal menyimpan cerita: " + err.message));
       } else {
-        firestore.collection("koleksi").add({ judul, genre, isi, gambarUrl }).then(() => alert("Cerita ditambahkan"));
+        firestore.collection("koleksi").add({ judul, genre, isi, gambarUrl: gambarUrlManual }).then(() => {
+          alert("Cerita ditambahkan tanpa gambar upload");
+        }).catch(err => alert("Gagal menyimpan cerita: " + err.message));
       }
     }
 
-    document.getElementById('id-cerita').addEventListener('change', function() {
+    document.getElementById('id-cerita').addEventListener('change', function () {
       const id = this.value;
       const list = document.getElementById('komentar-list');
       list.innerHTML = 'Memuat...';
@@ -222,7 +228,7 @@
     });
 
     function goBack() {
-      window.location.href = 'index.html'; // Ganti dengan URL beranda Anda
+      window.location.href = 'index.html';
     }
   </script>
 </body>
