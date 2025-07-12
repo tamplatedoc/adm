@@ -8,86 +8,90 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
-    /* CSS sama seperti sebelumnya */
     :root {
       --background-start: #f0f2f5;
       --background-end: #e0e2e5;
       --text-color: #333;
-      /* ... (variabel CSS lainnya) ... */
+      --header-bg: rgba(255, 255, 255, 0.9);
+      --container-bg: #ffffff;
+      --button-bg-gradient-start: #6a11cb;
+      --button-bg-gradient-end: #2575fc;
     }
-    /* ... (CSS lengkap seperti sebelumnya) ... */
+    
+    body.dark-mode {
+      --background-start: #1a1a2e;
+      --background-end: #16213e;
+      --text-color: #e0e0e0;
+      --header-bg: rgba(26, 26, 46, 0.9);
+      --container-bg: #22253b;
+      --button-bg-gradient-start: #8e2de2;
+      --button-bg-gradient-end: #4a00e0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, var(--background-start), var(--background-end));
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+
+    header {
+      background: var(--header-bg);
+      padding: 1rem 5%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .auth-container {
+      background: var(--container-bg);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 450px;
+      width: 100%;
+      margin: 2rem auto;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ... (Tambahkan styling lainnya sesuai kebutuhan) ... */
   </style>
 </head>
 <body>
-  <!-- Header -->
   <header>
-    <a href="catalog.html" class="logo">AMDF.GROUP</a>
-    <div style="display: flex; align-items: center;">
-      <a href="catalog.html" class="btn-back"><i class="fas fa-arrow-left"></i> Back to Catalog</a>
-      <div class="mode-toggle" onclick="toggleDarkMode()">
-        <div class="circle"></div>
-      </div>
-    </div>
+    <a href="/" class="logo">AMDF.GROUP</a>
+    <button id="darkModeToggle">Toggle Dark Mode</button>
   </header>
 
-  <!-- Main Content -->
   <main>
     <section class="auth-container">
-      <h2 id="authTitle">Login as Creator</h2>
+      <h2 id="authTitle">Creator Login</h2>
       <div id="message" class="message" style="display:none;"></div>
 
-      <!-- Login Form -->
       <form id="loginForm">
         <div class="form-group">
-          <label for="loginEmail">Email Address</label>
-          <input type="email" id="loginEmail" placeholder="your.email@example.com" required>
+          <label for="email">Email</label>
+          <input type="email" id="email" required>
         </div>
-        <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onLoginRecaptchaSuccess"></div>
-        <button type="submit" id="loginSubmitBtn" disabled>Send Magic Link</button>
+        <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onCaptchaSuccess"></div>
+        <button type="submit" id="submitBtn" disabled>Send Magic Link</button>
       </form>
-
-      <!-- Register Form -->
-      <form id="registerForm" style="display:none;">
-        <div class="form-group">
-          <label for="registerEmail">Email Address</label>
-          <input type="email" id="registerEmail" placeholder="your.email@example.com" required>
-        </div>
-        <div class="form-group">
-          <label for="registerAuthorName">Author Name</label>
-          <input type="text" id="registerAuthorName" placeholder="Your Pen Name" required>
-        </div>
-        <div class="form-group">
-          <label for="registerWhatsapp">WhatsApp Number</label>
-          <input type="tel" id="registerWhatsapp" placeholder="+628123456789" required>
-        </div>
-        <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onRegisterRecaptchaSuccess"></div>
-        <button type="submit" id="registerSubmitBtn" disabled>Register and Send Magic Link</button>
-      </form>
-
-      <div class="auth-toggle">
-        <span id="toggleText">Don't have an account?</span>
-        <a href="#" id="toggleAuth">Register here</a>
-      </div>
     </section>
   </main>
 
-  <!-- Footer -->
-  <footer>
-    <p>&copy; 2025 AMDF.GROUP. All rights reserved.</p>
-    <nav>
-      <a href="#about">About Us</a> |
-      <a href="#privacy">Privacy Policy</a> |
-      <a href="#terms">Terms of Service</a>
-    </nav>
-  </footer>
-
-  <!-- Firebase & App Scripts -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
     import { 
       getAuth, 
       isSignInWithEmailLink, 
-      signInWithEmailLink, 
+      signInWithEmailLink,
       sendSignInLinkToEmail,
       signInAnonymously
     } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
@@ -101,7 +105,7 @@
       apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
       authDomain: "tamplatedoc.firebaseapp.com",
       projectId: "tamplatedoc",
-      storageBucket: "tamplatedoc.firebasestorage.app",
+      storageBucket: "tamplatedoc.appspot.com",
       messagingSenderId: "264966107720",
       appId: "1:264966107720:web:868abe93cdff209040de7d"
     };
@@ -109,11 +113,11 @@
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const functions = getFunctions(app);
+    const functions = getFunctions(app, 'asia-southeast1');
     const verifyRecaptcha = httpsCallable(functions, 'verifyRecaptcha');
 
     // Global Variables
-    let currentRecaptchaToken = '';
+    let recaptchaToken = '';
     const actionCodeSettings = {
       url: window.location.href,
       handleCodeInApp: true
@@ -121,102 +125,54 @@
 
     // DOM Elements
     const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
-    const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+    const submitBtn = document.getElementById('submitBtn');
     const messageDiv = document.getElementById('message');
+    const darkModeToggle = document.getElementById('darkModeToggle');
 
     // Initialize Anonymous Auth
     signInAnonymously(auth).catch(error => {
-      console.log("Anonymous auth failed (non-critical):", error);
+      console.log("Anonymous auth optional:", error);
     });
 
-    // reCAPTCHA Callbacks
-    window.onLoginRecaptchaSuccess = (token) => {
-      currentRecaptchaToken = token;
-      loginSubmitBtn.disabled = false;
+    // reCAPTCHA Callback
+    window.onCaptchaSuccess = (token) => {
+      recaptchaToken = token;
+      submitBtn.disabled = false;
     };
 
-    window.onRegisterRecaptchaSuccess = (token) => {
-      currentRecaptchaToken = token;
-      registerSubmitBtn.disabled = false;
-    };
-
-    window.onRecaptchaExpired = () => {
-      currentRecaptchaToken = '';
-      loginSubmitBtn.disabled = true;
-      registerSubmitBtn.disabled = true;
-      showMessage("reCAPTCHA expired. Please verify again.", "error");
-    };
-
-    // Form Handlers
+    // Form Submission
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      await handleAuthFlow('login');
-    });
+      const email = document.getElementById('email').value.trim();
 
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await handleAuthFlow('register');
-    });
-
-    // Auth Flow
-    async function handleAuthFlow(type) {
-      const email = document.getElementById(`${type}Email`).value.trim();
-      
       try {
-        // Verify reCAPTCHA first
-        const recaptchaResult = await verifyRecaptcha({ 
-          token: currentRecaptchaToken 
-        });
+        submitBtn.disabled = true;
+        showMessage("Processing...", "info");
+
+        // 1. Verify reCAPTCHA
+        const recaptchaResult = await verifyRecaptcha({ token: recaptchaToken });
         
         if (!recaptchaResult.data.success) {
           throw new Error("reCAPTCHA verification failed");
         }
 
-        // Send magic link
+        // 2. Send magic link
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
         localStorage.setItem('emailForSignIn', email);
         
-        if (type === 'register') {
-          // Save additional data (implement sesuai kebutuhan)
-          console.log("Registration data:", {
-            name: document.getElementById('registerAuthorName').value,
-            whatsapp: document.getElementById('registerWhatsapp').value
-          });
-        }
-
-        showMessage(`Magic link sent to ${email}. Check your inbox!`, "success");
-        resetForms();
-      } catch (error) {
-        showMessage(error.message || "Authentication failed", "error");
-        resetRecaptcha();
-      }
-    }
-
-    // Helper Functions
-    function showMessage(text, type) {
-      messageDiv.textContent = text;
-      messageDiv.className = `message ${type}`;
-      messageDiv.style.display = 'block';
-    }
-
-    function resetForms() {
-      loginForm.reset();
-      registerForm.reset();
-      resetRecaptcha();
-    }
-
-    function resetRecaptcha() {
-      currentRecaptchaToken = '';
-      if (typeof grecaptcha !== 'undefined') {
+        showMessage(`Magic link sent to ${email}`, "success");
+        loginForm.reset();
         grecaptcha.reset();
+        
+      } catch (error) {
+        showMessage(error.message || "Login failed", "error");
+        console.error("Error:", error);
+      } finally {
+        submitBtn.disabled = false;
       }
-      loginSubmitBtn.disabled = true;
-      registerSubmitBtn.disabled = true;
-    }
+    });
 
-    // Handle email link sign-in
+    // Handle Email Link Sign-in
     if (isSignInWithEmailLink(auth, window.location.href)) {
       const email = localStorage.getItem('emailForSignIn') || 
                    prompt("Please enter your email for confirmation:");
@@ -225,12 +181,33 @@
         signInWithEmailLink(auth, email, window.location.href)
           .then(() => {
             localStorage.removeItem('emailForSignIn');
-            window.location.href = 'creator-dashboard.html';
+            window.location.href = '/creator-dashboard';
           })
           .catch(error => {
             showMessage("Login failed: " + error.message, "error");
           });
       }
+    }
+
+    // Helper Functions
+    function showMessage(text, type) {
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+      setTimeout(() => {
+        messageDiv.style.display = 'none';
+      }, 5000);
+    }
+
+    // Dark Mode Toggle
+    darkModeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    });
+
+    // Initialize Dark Mode
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.body.classList.add('dark-mode');
     }
   </script>
 </body>
