@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://www.google.com/recaptcha/api.js" async defer></script> 
     <style>
-        /* ... (CSS Anda tidak berubah) ... */
+        /* ... CSS Anda tidak berubah ... */
         :root {
             --background-start: #f0f2f5;
             --background-end: #e0e2e5;
@@ -350,8 +350,8 @@
                 <div class="form-group" style="display:none;"> <label for="loginPin">PIN (6 digits)</label>
                     <input type="password" id="loginPin" placeholder="******" maxlength="6" pattern="[0-9]{6}" title="PIN must be 6 digits" disabled>
                 </div>
-                <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh"></div>
-                <button type="submit">Send Magic Link</button>
+                <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onLoginRecaptchaSuccess"></div>
+                <button type="submit" id="loginSubmitBtn" disabled>Send Magic Link</button>
             </form>
 
             <form id="registerForm" style="display:none;">
@@ -373,8 +373,8 @@
                     <label for="registerWhatsapp">WhatsApp Number</label>
                     <input type="tel" id="registerWhatsapp" placeholder="e.g., +628123456789" required>
                 </div>
-                <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh"></div>
-                <button type="submit">Register and Send Magic Link</button>
+                <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onRegisterRecaptchaSuccess"></div>
+                <button type="submit" id="registerSubmitBtn" disabled>Register and Send Magic Link</button>
             </form>
 
             <div class="auth-toggle">
@@ -418,6 +418,9 @@ const verifyRecaptchaCallable = httpsCallable(functions, 'verifyRecaptcha');
 const auth = getAuth(app);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
+
+// Variabel global untuk menyimpan token reCAPTCHA
+let currentRecaptchaToken = '';
 
 function applyTheme() {
     if (localStorage.getItem('theme') === 'dark') {
@@ -481,6 +484,38 @@ const registerForm = document.getElementById('registerForm');
 const toggleAuth = document.getElementById('toggleAuth');
 const toggleText = document.getElementById('toggleText');
 const messageDiv = document.getElementById('message');
+const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+
+// --- Fungsi Callback reCAPTCHA (GLOBAL) ---
+// Penting: Fungsi ini harus global agar bisa dipanggil oleh reCAPTCHA API
+window.onLoginRecaptchaSuccess = function(token) {
+    console.log("reCAPTCHA Login Success! Token:", token);
+    currentRecaptchaToken = token;
+    loginSubmitBtn.disabled = false; // Aktifkan tombol submit login
+    showMessage("", "info"); // Hapus pesan error reCAPTCHA sebelumnya
+};
+
+window.onRegisterRecaptchaSuccess = function(token) {
+    console.log("reCAPTCHA Register Success! Token:", token);
+    currentRecaptchaToken = token;
+    registerSubmitBtn.disabled = false; // Aktifkan tombol submit register
+    showMessage("", "info"); // Hapus pesan error reCAPTCHA sebelumnya
+};
+
+// Fungsi untuk dipanggil saat reCAPTCHA kadaluarsa (token tidak valid lagi)
+window.onRecaptchaExpired = function() {
+    console.log("reCAPTCHA token expired. Please re-verify.");
+    currentRecaptchaToken = ''; // Hapus token yang sudah kadaluarsa
+    if (loginForm.style.display !== 'none') { // Jika form login yang aktif
+        loginSubmitBtn.disabled = true;
+    } else { // Jika form register yang aktif
+        registerSubmitBtn.disabled = true;
+    }
+    showMessage("reCAPTCHA expired. Please re-verify.", "error");
+    grecaptcha.reset(); // Reset reCAPTCHA
+};
+
 
 toggleAuth.addEventListener('click', (e) => {
     e.preventDefault();
@@ -490,17 +525,20 @@ toggleAuth.addEventListener('click', (e) => {
         authTitle.textContent = 'Login as Creator';
         toggleText.textContent = "Don't have an account?";
         toggleAuth.textContent = 'Register here';
+        loginSubmitBtn.disabled = true; // Nonaktifkan tombol saat berganti form
     } else {
         loginForm.style.display = 'none';
         registerForm.style.display = 'block';
         authTitle.textContent = 'Register as Creator';
         toggleText.textContent = "Already have an account?";
         toggleAuth.textContent = 'Login here';
+        registerSubmitBtn.disabled = true; // Nonaktifkan tombol saat berganti form
     }
     messageDiv.style.display = 'none';
     // Reset reCAPTCHA saat beralih formulir untuk memastikan token baru dihasilkan
     if (typeof grecaptcha !== 'undefined') {
         grecaptcha.reset();
+        currentRecaptchaToken = ''; // Hapus token yang tersimpan saat reset
     }
 });
 
@@ -531,27 +569,28 @@ registerForm.addEventListener('submit', async (e) => {
     const authorName = document.getElementById('registerAuthorName').value;
     const whatsapp = document.getElementById('registerWhatsapp').value;
     
-    // Pastikan reCAPTCHA sudah siap sebelum mencoba mendapatkan respons
-    if (typeof grecaptcha === 'undefined') {
-        showMessage("reCAPTCHA is not loaded. Please refresh the page.", "error");
-        return;
-    }
+    // Gunakan token yang sudah disimpan dari callback reCAPTCHA
+    const recaptchaResponse = currentRecaptchaToken; 
 
-    const recaptchaResponse = grecaptcha.getResponse();
-    console.log("reCAPTCHA response (Register Form):", recaptchaResponse); // DEBUGGING: Cek respons reCAPTCHA
+    console.log("DEBUG: reCAPTCHA response (Register Form from stored token):", recaptchaResponse); 
 
     if (!recaptchaResponse) {
         showMessage("Please complete the reCAPTCHA.", "error");
+        registerSubmitBtn.disabled = true; // Pastikan tombol dinonaktifkan
         return;
     }
 
     try {
         showMessage("Verifying reCAPTCHA...", "info");
+        // Nonaktifkan tombol untuk mencegah double submit
+        registerSubmitBtn.disabled = true; 
+
         const result = await verifyRecaptchaCallable({ token: recaptchaResponse });
 
         if (!result.data.success) {
             showMessage("reCAPTCHA verification failed. Please try again.", "error");
             grecaptcha.reset(); // Reset widget reCAPTCHA jika gagal
+            currentRecaptchaToken = ''; // Hapus token yang tersimpan
             return;
         }
 
@@ -565,6 +604,7 @@ registerForm.addEventListener('submit', async (e) => {
         if (lastSendTime && (currentTime - lastSendTime < oneHour)) {
             showMessage("A magic link was sent recently. Please wait before requesting another one.", "error");
             grecaptcha.reset();
+            currentRecaptchaToken = '';
             return;
         }
 
@@ -586,6 +626,7 @@ registerForm.addEventListener('submit', async (e) => {
 
         showMessage(`A magic link has been sent to ${email}. Please check your inbox to complete registration. This link is valid for a short period and for this device.`, "success");
         grecaptcha.reset(); // Reset reCAPTCHA after successful submission
+        currentRecaptchaToken = ''; // Hapus token yang tersimpan
     } catch (error) {
         console.error("Error during registration:", error);
         let errorMessage = "Registration failed. Please try again.";
@@ -602,6 +643,12 @@ registerForm.addEventListener('submit', async (e) => {
         }
         showMessage(errorMessage, "error");
         grecaptcha.reset(); // Reset reCAPTCHA on error
+        currentRecaptchaToken = ''; // Hapus token yang tersimpan
+    } finally {
+        // re-enable button if something failed, reCAPTCHA reset will handle re-enabling after new verification
+        if (!currentRecaptchaToken) { // Hanya aktifkan jika tidak ada token yang valid
+            registerSubmitBtn.disabled = true;
+        }
     }
 });
 
@@ -610,27 +657,28 @@ loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value;
 
-    // Pastikan reCAPTCHA sudah siap sebelum mencoba mendapatkan respons
-    if (typeof grecaptcha === 'undefined') {
-        showMessage("reCAPTCHA is not loaded. Please refresh the page.", "error");
-        return;
-    }
-
-    const recaptchaResponse = grecaptcha.getResponse();
-    console.log("reCAPTCHA response (Login Form):", recaptchaResponse); // DEBUGGING: Cek respons reCAPTCHA
+    // Gunakan token yang sudah disimpan dari callback reCAPTCHA
+    const recaptchaResponse = currentRecaptchaToken; 
+    
+    console.log("DEBUG: reCAPTCHA response (Login Form from stored token):", recaptchaResponse); // DEBUGGING
 
     if (!recaptchaResponse) {
         showMessage("Please complete the reCAPTCHA.", "error");
+        loginSubmitBtn.disabled = true; // Pastikan tombol dinonaktifkan
         return;
     }
 
     try {
         showMessage("Verifying reCAPTCHA...", "info");
+        // Nonaktifkan tombol untuk mencegah double submit
+        loginSubmitBtn.disabled = true; 
+
         const result = await verifyRecaptchaCallable({ token: recaptchaResponse });
 
         if (!result.data.success) {
             showMessage("reCAPTCHA verification failed. Please try again.", "error");
             grecaptcha.reset(); // Reset widget reCAPTCHA jika gagal
+            currentRecaptchaToken = ''; // Hapus token yang tersimpan
             return;
         }
 
@@ -644,6 +692,7 @@ loginForm.addEventListener('submit', async (e) => {
         if (lastSendTime && (currentTime - lastSendTime < oneHour)) {
             showMessage("A magic link was sent recently. Please wait before requesting another one.", "error");
             grecaptcha.reset();
+            currentRecaptchaToken = '';
             return;
         }
 
@@ -656,6 +705,7 @@ loginForm.addEventListener('submit', async (e) => {
 
         showMessage(`A magic link has been sent to ${email}. Please check your inbox to log in. This link is valid for a short period and for this device.`, "success");
         grecaptcha.reset(); // Reset reCAPTCHA after successful submission
+        currentRecaptchaToken = ''; // Hapus token yang tersimpan
     } catch (error) {
         console.error("Error during login:", error);
         let errorMessage = "Login failed. Please try again.";
@@ -674,6 +724,12 @@ loginForm.addEventListener('submit', async (e) => {
         }
         showMessage(errorMessage, "error");
         grecaptcha.reset(); // Reset reCAPTCHA on error
+        currentRecaptchaToken = ''; // Hapus token yang tersimpan
+    } finally {
+        // re-enable button if something failed, reCAPTCHA reset will handle re-enabling after new verification
+        if (!currentRecaptchaToken) { // Hanya aktifkan jika tidak ada token yang valid
+            loginSubmitBtn.disabled = true;
+        }
     }
 });
 
@@ -713,6 +769,5 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
     </script>
-
 </body>
 </html>
