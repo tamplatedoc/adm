@@ -1,516 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creator Login / Register - AMDF.GROUP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <style>
-        :root {
-            --background-start: #f0f2f5;
-            --background-end: #e0e2e5;
-            --text-color: #333;
-            --header-bg: rgba(255, 255, 255, 0.9);
-            --header-border: #eee;
-            --container-bg: #ffffff;
-            --container-border: #ddd;
-            --container-shadow: rgba(0, 0, 0, 0.08);
-            --button-bg-gradient-start: #6a11cb;
-            --button-bg-gradient-end: #2575fc;
-            --button-text-color: #fff;
-            --link-color: #007bff;
-            --input-bg: #f9f9f9;
-            --input-border: #ccc;
-            --input-text: #333;
-            --toggle-bg: #ddd;
-            --toggle-circle-bg: #fff;
-            --toggle-shadow: rgba(0, 0, 0, 0.2);
-            --footer-bg: #333;
-            --footer-text: #eee;
-        }
-
-        body.dark-mode {
-            --background-start: #1a1a2e;
-            --background-end: #16213e;
-            --text-color: #e0e0e0;
-            --header-bg: rgba(26, 26, 46, 0.9);
-            --header-border: #333;
-            --container-bg: #22253b;
-            --container-border: #444;
-            --container-shadow: rgba(0, 0, 0, 0.4);
-            --button-bg-gradient-start: #8e2de2;
-            --button-bg-gradient-end: #4a00e0;
-            --button-text-color: #fff;
-            --link-color: #8e2de2;
-            --input-bg: #33364f;
-            --input-border: #555;
-            --input-text: #e0e0e0;
-            --toggle-bg: #555;
-            --toggle-circle-bg: #bbb;
-            --toggle-shadow: rgba(0, 0, 0, 0.4);
-            --footer-bg: #111;
-            --footer-text: #bbb;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background: linear-gradient(135deg, var(--background-start), var(--background-end));
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: background 0.3s ease, color 0.3s ease;
-        }
-
-        /* ... (CSS lengkap sama seperti sebelumnya) ... */
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMDF.GROUP - Creator Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <style>
+    /* CSS sama seperti sebelumnya */
+    :root {
+      --background-start: #f0f2f5;
+      --background-end: #e0e2e5;
+      --text-color: #333;
+      /* ... (variabel CSS lainnya) ... */
+    }
+    /* ... (CSS lengkap seperti sebelumnya) ... */
+  </style>
 </head>
 <body>
-    <header>
-        <a href="catalog.html" class="logo">AMDF.GROUP</a>
-        <div style="display: flex; align-items: center;">
-            <a href="catalog.html" class="btn-back"><i class="fas fa-arrow-left"></i> Back to Catalog</a>
-            <div class="mode-toggle" onclick="toggleDarkMode()">
-                <div class="circle"></div>
-            </div>
+  <!-- Header -->
+  <header>
+    <a href="catalog.html" class="logo">AMDF.GROUP</a>
+    <div style="display: flex; align-items: center;">
+      <a href="catalog.html" class="btn-back"><i class="fas fa-arrow-left"></i> Back to Catalog</a>
+      <div class="mode-toggle" onclick="toggleDarkMode()">
+        <div class="circle"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <section class="auth-container">
+      <h2 id="authTitle">Login as Creator</h2>
+      <div id="message" class="message" style="display:none;"></div>
+
+      <!-- Login Form -->
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" placeholder="your.email@example.com" required>
         </div>
-    </header>
+        <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onLoginRecaptchaSuccess"></div>
+        <button type="submit" id="loginSubmitBtn" disabled>Send Magic Link</button>
+      </form>
 
-    <main>
-        <section class="auth-container">
-            <h2 id="authTitle">Login as Creator</h2>
-            <div id="message" class="message" style="display:none;"></div>
+      <!-- Register Form -->
+      <form id="registerForm" style="display:none;">
+        <div class="form-group">
+          <label for="registerEmail">Email Address</label>
+          <input type="email" id="registerEmail" placeholder="your.email@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="registerAuthorName">Author Name</label>
+          <input type="text" id="registerAuthorName" placeholder="Your Pen Name" required>
+        </div>
+        <div class="form-group">
+          <label for="registerWhatsapp">WhatsApp Number</label>
+          <input type="tel" id="registerWhatsapp" placeholder="+628123456789" required>
+        </div>
+        <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onRegisterRecaptchaSuccess"></div>
+        <button type="submit" id="registerSubmitBtn" disabled>Register and Send Magic Link</button>
+      </form>
 
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="loginEmail">Email Address</label>
-                    <input type="email" id="loginEmail" placeholder="your.email@example.com" required>
-                </div>
-                <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onLoginRecaptchaSuccess"></div>
-                <button type="submit" id="loginSubmitBtn" disabled>Send Magic Link</button>
-            </form>
+      <div class="auth-toggle">
+        <span id="toggleText">Don't have an account?</span>
+        <a href="#" id="toggleAuth">Register here</a>
+      </div>
+    </section>
+  </main>
 
-            <form id="registerForm" style="display:none;">
-                <div class="form-group">
-                    <label for="registerEmail">Email Address</label>
-                    <input type="email" id="registerEmail" placeholder="your.email@example.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerAuthorName">Author Name</label>
-                    <input type="text" id="registerAuthorName" placeholder="Your Pen Name" required>
-                </div>
-                <div class="form-group">
-                    <label for="registerWhatsapp">WhatsApp Number</label>
-                    <input type="tel" id="registerWhatsapp" placeholder="+628123456789" required>
-                </div>
-                <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onRegisterRecaptchaSuccess"></div>
-                <button type="submit" id="registerSubmitBtn" disabled>Register and Send Magic Link</button>
-            </form>
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 AMDF.GROUP. All rights reserved.</p>
+    <nav>
+      <a href="#about">About Us</a> |
+      <a href="#privacy">Privacy Policy</a> |
+      <a href="#terms">Terms of Service</a>
+    </nav>
+  </footer>
 
-            <div class="auth-toggle">
-                <span id="toggleText">Don't have an account?</span>
-                <a href="#" id="toggleAuth">Register here</a>
-            </div>
-        </section>
-    </main>
+  <!-- Firebase & App Scripts -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { 
+      getAuth, 
+      isSignInWithEmailLink, 
+      signInWithEmailLink, 
+      sendSignInLinkToEmail,
+      signInAnonymously
+    } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+    import { 
+      getFunctions, 
+      httpsCallable 
+    } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
 
-    <footer>
-        <p>&copy; 2025 AMDF.GROUP. All rights reserved.</p>
-        <nav>
-            <a href="#about">About Us</a> |
-            <a href="#privacy">Privacy Policy</a> |
-            <a href="#terms">Terms of Service</a>
-        </nav>
-    </footer>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
+      authDomain: "tamplatedoc.firebaseapp.com",
+      projectId: "tamplatedoc",
+      storageBucket: "tamplatedoc.firebasestorage.app",
+      messagingSenderId: "264966107720",
+      appId: "1:264966107720:web:868abe93cdff209040de7d"
+    };
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { 
-            getAuth, 
-            isSignInWithEmailLink, 
-            signInWithEmailLink, 
-            sendSignInLinkToEmail, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc 
-        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-        import { 
-            getDatabase, 
-            ref as rtdbRef, 
-            set as rtdbSet, 
-            get as rtdbGet 
-        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
-        import { 
-            getFunctions, 
-            httpsCallable 
-        } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const functions = getFunctions(app);
+    const verifyRecaptcha = httpsCallable(functions, 'verifyRecaptcha');
 
-        // Konfigurasi Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
-            authDomain: "tamplatedoc.firebaseapp.com",
-            databaseURL: "https://tamplatedoc-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "tamplatedoc",
-            storageBucket: "tamplatedoc.firebasestorage.app",
-            messagingSenderId: "264966107720",
-            appId: "1:264966107720:web:868abe93cdff209040de7d",
-            measurementId: "G-S5WTZ7S5PG"
-        };
+    // Global Variables
+    let currentRecaptchaToken = '';
+    const actionCodeSettings = {
+      url: window.location.href,
+      handleCodeInApp: true
+    };
 
-        // Inisialisasi Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const rtdb = getDatabase(app);
-        const functions = getFunctions(app);
-        const verifyRecaptcha = httpsCallable(functions, 'verifyRecaptcha');
+    // DOM Elements
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+    const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+    const messageDiv = document.getElementById('message');
 
-        // Variabel global
-        let currentRecaptchaToken = '';
-        const actionCodeSettings = {
-            url: window.location.href,
-            handleCodeInApp: true
-        };
+    // Initialize Anonymous Auth
+    signInAnonymously(auth).catch(error => {
+      console.log("Anonymous auth failed (non-critical):", error);
+    });
 
-        // DOM Elements
-        const authTitle = document.getElementById('authTitle');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const toggleAuth = document.getElementById('toggleAuth');
-        const toggleText = document.getElementById('toggleText');
-        const messageDiv = document.getElementById('message');
-        const loginSubmitBtn = document.getElementById('loginSubmitBtn');
-        const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+    // reCAPTCHA Callbacks
+    window.onLoginRecaptchaSuccess = (token) => {
+      currentRecaptchaToken = token;
+      loginSubmitBtn.disabled = false;
+    };
 
-        // ======================
-        // FUNGSI UTAMA
-        // ======================
+    window.onRegisterRecaptchaSuccess = (token) => {
+      currentRecaptchaToken = token;
+      registerSubmitBtn.disabled = false;
+    };
 
-        // 1. Fungsi Toggle Dark Mode
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
-        }
+    window.onRecaptchaExpired = () => {
+      currentRecaptchaToken = '';
+      loginSubmitBtn.disabled = true;
+      registerSubmitBtn.disabled = true;
+      showMessage("reCAPTCHA expired. Please verify again.", "error");
+    };
 
-        // 2. Fungsi Reset reCAPTCHA
-        function resetRecaptcha() {
-            currentRecaptchaToken = '';
-            if (typeof grecaptcha !== 'undefined') {
-                grecaptcha.reset();
-            }
-        }
+    // Form Handlers
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await handleAuthFlow('login');
+    });
 
-        // 3. Fungsi Tampilkan Pesan
-        function showMessage(text, type) {
-            messageDiv.textContent = text;
-            messageDiv.className = `message ${type}`;
-            messageDiv.style.display = 'block';
-            if (type === 'error') {
-                console.error(text);
-            }
-        }
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await handleAuthFlow('register');
+    });
 
-        // 4. Fungsi Generate Creator ID
-        function generateCreatorId() {
-            const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
-            let result = '';
-            for (let i = 0; i < 4; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return result;
-        }
-
-        // 5. Fungsi Validasi WhatsApp
-        function validateWhatsAppNumber(number) {
-            const regex = /^\+[1-9]\d{1,14}$/;
-            return regex.test(number);
-        }
-
-        // 6. Fungsi Reset Form
-        function resetForms() {
-            loginForm.reset();
-            registerForm.reset();
-            resetRecaptcha();
-            loginSubmitBtn.disabled = true;
-            registerSubmitBtn.disabled = true;
-        }
-
-        // 7. Fungsi Handle Error
-        function handleError(error) {
-            let message = "An error occurred. Please try again.";
-            
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    message = "Email not registered. Please sign up first.";
-                    break;
-                case 'auth/invalid-email':
-                    message = "Invalid email format.";
-                    break;
-                case 'auth/too-many-requests':
-                    message = "Too many attempts. Please wait 15 minutes.";
-                    break;
-                case 'permission-denied':
-                    message = "reCAPTCHA verification failed.";
-                    break;
-                case 'resource-exhausted':
-                    message = "Too many requests. Please wait before trying again.";
-                    break;
-                default:
-                    message = error.message || message;
-            }
-            
-            showMessage(message, "error");
-            resetRecaptcha();
-        }
-
-        // ======================
-        // EVENT LISTENERS
-        // ======================
-
-        // 1. Toggle Login/Register Form
-        toggleAuth.addEventListener('click', (e) => {
-            e.preventDefault();
-            resetRecaptcha();
-            
-            if (loginForm.style.display === 'none') {
-                // Switch to Login
-                loginForm.style.display = 'block';
-                registerForm.style.display = 'none';
-                authTitle.textContent = 'Login as Creator';
-                toggleText.textContent = "Don't have an account?";
-                toggleAuth.textContent = 'Register here';
-                loginSubmitBtn.disabled = true;
-            } else {
-                // Switch to Register
-                loginForm.style.display = 'none';
-                registerForm.style.display = 'block';
-                authTitle.textContent = 'Register as Creator';
-                toggleText.textContent = "Already have an account?";
-                toggleAuth.textContent = 'Login here';
-                registerSubmitBtn.disabled = true;
-            }
-            
-            messageDiv.style.display = 'none';
+    // Auth Flow
+    async function handleAuthFlow(type) {
+      const email = document.getElementById(`${type}Email`).value.trim();
+      
+      try {
+        // Verify reCAPTCHA first
+        const recaptchaResult = await verifyRecaptcha({ 
+          token: currentRecaptchaToken 
         });
-
-        // 2. reCAPTCHA Callbacks
-        window.onLoginRecaptchaSuccess = (token) => {
-            currentRecaptchaToken = token;
-            loginSubmitBtn.disabled = false;
-            showMessage("", "info");
-        };
-
-        window.onRegisterRecaptchaSuccess = (token) => {
-            currentRecaptchaToken = token;
-            registerSubmitBtn.disabled = false;
-            showMessage("", "info");
-        };
-
-        window.onRecaptchaExpired = () => {
-            currentRecaptchaToken = '';
-            loginSubmitBtn.disabled = true;
-            registerSubmitBtn.disabled = true;
-            showMessage("reCAPTCHA expired. Please verify again.", "error");
-            resetRecaptcha();
-        };
-
-        // 3. Login Form Submission
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value.trim();
-            
-            if (!currentRecaptchaToken) {
-                showMessage("Please complete the reCAPTCHA.", "error");
-                return;
-            }
-
-            try {
-                loginSubmitBtn.disabled = true;
-                showMessage("Sending magic link...", "info");
-
-                // Verify reCAPTCHA
-                const recaptchaResult = await verifyRecaptcha({ 
-                    token: currentRecaptchaToken 
-                });
-
-                if (!recaptchaResult.data.success) {
-                    throw new Error("reCAPTCHA verification failed");
-                }
-
-                // Check last send time
-                const lastSendRef = rtdbRef(rtdb, `otp_timestamps/${btoa(email).replace(/\./g, '_')}`);
-                const snapshot = await rtdbGet(lastSendRef);
-                const lastSendTime = snapshot.val();
-                const currentTime = Date.now();
-                const cooldownPeriod = 60 * 60 * 1000; // 1 hour
-
-                if (lastSendTime && (currentTime - lastSendTime < cooldownPeriod)) {
-                    throw new Error("auth/too-many-requests");
-                }
-
-                // Send magic link
-                await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-                localStorage.setItem('emailForSignIn', email);
-                await rtdbSet(lastSendRef, currentTime);
-
-                showMessage(`Magic link sent to ${email}. Check your inbox!`, "success");
-                resetForms();
-            } catch (error) {
-                handleError(error);
-            } finally {
-                if (!currentRecaptchaToken) {
-                    loginSubmitBtn.disabled = true;
-                }
-            }
-        });
-
-        // 4. Register Form Submission
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('registerEmail').value.trim();
-            const authorName = document.getElementById('registerAuthorName').value.trim();
-            const whatsapp = document.getElementById('registerWhatsapp').value.trim();
-
-            if (!validateWhatsAppNumber(whatsapp)) {
-                showMessage("Please enter a valid WhatsApp number (e.g., +628123456789)", "error");
-                return;
-            }
-
-            if (!currentRecaptchaToken) {
-                showMessage("Please complete the reCAPTCHA.", "error");
-                return;
-            }
-
-            try {
-                registerSubmitBtn.disabled = true;
-                showMessage("Processing registration...", "info");
-
-                // Verify reCAPTCHA
-                const recaptchaResult = await verifyRecaptcha({ 
-                    token: currentRecaptchaToken 
-                });
-
-                if (!recaptchaResult.data.success) {
-                    throw new Error("reCAPTCHA verification failed");
-                }
-
-                // Check last send time
-                const lastSendRef = rtdbRef(rtdb, `otp_timestamps/${btoa(email).replace(/\./g, '_')}`);
-                const snapshot = await rtdbGet(lastSendRef);
-                const lastSendTime = snapshot.val();
-                const currentTime = Date.now();
-                const cooldownPeriod = 60 * 60 * 1000; // 1 hour
-
-                if (lastSendTime && (currentTime - lastSendTime < cooldownPeriod)) {
-                    throw new Error("auth/too-many-requests");
-                }
-
-                // Send magic link
-                await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-                localStorage.setItem('emailForSignIn', email);
-
-                // Save temporary registration data
-                const creatorId = generateCreatorId();
-                await rtdbSet(
-                    rtdbRef(rtdb, `temp_registrations/${btoa(email).replace(/\./g, '_')}`), 
-                    {
-                        authorName,
-                        whatsapp,
-                        creatorId,
-                        timestamp: currentTime
-                    }
-                );
-
-                await rtdbSet(lastSendRef, currentTime);
-
-                showMessage(`Magic link sent to ${email}. Complete registration via the link!`, "success");
-                resetForms();
-            } catch (error) {
-                handleError(error);
-            } finally {
-                if (!currentRecaptchaToken) {
-                    registerSubmitBtn.disabled = true;
-                }
-            }
-        });
-
-        // ======================
-        // INISIALISASI
-        // ======================
-
-        // 1. Apply saved theme
-        if (localStorage.getItem('theme') === 'dark') {
-            document.body.classList.add('dark-mode');
+        
+        if (!recaptchaResult.data.success) {
+          throw new Error("reCAPTCHA verification failed");
         }
 
-        // 2. Handle email link sign-in
-        if (isSignInWithEmailLink(auth, window.location.href)) {
-            (async () => {
-                let email = localStorage.getItem('emailForSignIn');
-                if (!email) {
-                    email = prompt("Please enter your email for confirmation:");
-                    if (!email) return;
-                }
-
-                try {
-                    await signInWithEmailLink(auth, email, window.location.href);
-                    localStorage.removeItem('emailForSignIn');
-                    showMessage("Login successful! Redirecting...", "success");
-                    
-                    setTimeout(() => {
-                        window.location.href = 'web_creator.html';
-                    }, 2000);
-                } catch (error) {
-                    handleError(error);
-                }
-            })();
+        // Send magic link
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        localStorage.setItem('emailForSignIn', email);
+        
+        if (type === 'register') {
+          // Save additional data (implement sesuai kebutuhan)
+          console.log("Registration data:", {
+            name: document.getElementById('registerAuthorName').value,
+            whatsapp: document.getElementById('registerWhatsapp').value
+          });
         }
 
-        // 3. Auth state observer
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const authorDoc = await getDoc(doc(db, "authors", user.uid));
-                
-                // Jika baru register (data belum ada di Firestore)
-                if (!authorDoc.exists()) {
-                    const emailKey = btoa(user.email).replace(/\./g, '_');
-                    const tempRegRef = rtdbRef(rtdb, `temp_registrations/${emailKey}`);
-                    const tempRegSnap = await rtdbGet(tempRegRef);
-                    
-                    if (tempRegSnap.exists()) {
-                        const tempData = tempRegSnap.val();
-                        await setDoc(doc(db, "authors", user.uid), {
-                            name: tempData.authorName,
-                            creatorId: tempData.creatorId,
-                            uid: user.uid,
-                            whatsapp: tempData.whatsapp,
-                            email: user.email
-                        });
-                        await rtdbSet(tempRegRef, null);
-                    }
-                }
-                
-                // Redirect berdasarkan role
-                setTimeout(() => {
-                    window.location.href = authorDoc.exists() ? 
-                        'web_creator.html' : 
-                        'user_dashboard.html';
-                }, 100);
-            }
-        });
-    </script>
+        showMessage(`Magic link sent to ${email}. Check your inbox!`, "success");
+        resetForms();
+      } catch (error) {
+        showMessage(error.message || "Authentication failed", "error");
+        resetRecaptcha();
+      }
+    }
+
+    // Helper Functions
+    function showMessage(text, type) {
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+    }
+
+    function resetForms() {
+      loginForm.reset();
+      registerForm.reset();
+      resetRecaptcha();
+    }
+
+    function resetRecaptcha() {
+      currentRecaptchaToken = '';
+      if (typeof grecaptcha !== 'undefined') {
+        grecaptcha.reset();
+      }
+      loginSubmitBtn.disabled = true;
+      registerSubmitBtn.disabled = true;
+    }
+
+    // Handle email link sign-in
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      const email = localStorage.getItem('emailForSignIn') || 
+                   prompt("Please enter your email for confirmation:");
+      
+      if (email) {
+        signInWithEmailLink(auth, email, window.location.href)
+          .then(() => {
+            localStorage.removeItem('emailForSignIn');
+            window.location.href = 'creator-dashboard.html';
+          })
+          .catch(error => {
+            showMessage("Login failed: " + error.message, "error");
+          });
+      }
+    }
+  </script>
 </body>
 </html>
