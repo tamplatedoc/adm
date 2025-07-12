@@ -1,61 +1,70 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Login dengan reCAPTCHA v2</title>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-  </head>
-  <body>
-    <h2>Login Form</h2>
-    <form id="loginForm">
-      <input type="email" id="email" placeholder="Email" required><br>
-      <input type="password" id="password" placeholder="Password" required><br>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Register dengan reCAPTCHA</title>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+  <h2>Form Register</h2>
+  <form id="registerForm">
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
 
-      <!-- reCAPTCHA v2 -->
-      <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh"></div><br>
+    <!-- reCAPTCHA v2 Checkbox -->
+    <div class="g-recaptcha" data-sitekey="SITE_KEY_KAMU"></div><br>
 
-      <button type="submit">Login</button>
-    </form>
+    <button type="submit">Daftar</button>
+  </form>
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-      import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-functions.js";
 
-      const firebaseConfig = {
-       apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
-    authDomain: "tamplatedoc.firebaseapp.com",
-     projectId: "tamplatedoc",
-      };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
+      authDomain: "tamplatedoc.firebaseapp.com",
+      databaseURL: "https://tamplatedoc-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "tamplatedoc",
+      storageBucket: "tamplatedoc.firebasestorage.app",
+      messagingSenderId: "264966107720",
+      appId: "1:264966107720:web:868abe93cdff209040de7d",
+      measurementId: "G-S5WTZ7S5PG"
+    };
 
-      const app = initializeApp(firebaseConfig);
-      const functions = getFunctions(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const functions = getFunctions(app);
 
-      const loginForm = document.getElementById("loginForm");
-      loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    const registerForm = document.getElementById("registerForm");
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-        const recaptchaToken = document.querySelector("[name='g-recaptcha-response']").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const token = document.querySelector("[name='g-recaptcha-response']").value;
 
-        if (!recaptchaToken) {
-          alert("Tolong selesaikan reCAPTCHA terlebih dahulu.");
-          return;
+      if (!token) {
+        alert("Tolong centang reCAPTCHA terlebih dahulu.");
+        return;
+      }
+
+      try {
+        const verifyRecaptcha = httpsCallable(functions, "verifyRecaptchaV2");
+        const result = await verifyRecaptcha({ token });
+
+        if (result.data.success) {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          alert("Pendaftaran berhasil untuk: " + userCredential.user.email);
+        } else {
+          alert("Verifikasi reCAPTCHA gagal. Silakan coba lagi.");
         }
-
-        const verifyRecaptcha = httpsCallable(functions, 'verifyRecaptchaV2');
-        try {
-          const result = await verifyRecaptcha({ token: recaptchaToken });
-          if (result.data.success) {
-            alert("reCAPTCHA valid. Lanjutkan login...");
-            // Lanjut login Firebase Auth di sini jika ingin
-          } else {
-            alert("Verifikasi reCAPTCHA gagal.");
-          }
-        } catch (err) {
-          console.error("Error:", err);
-          alert("Terjadi kesalahan saat verifikasi.");
-        }
-      });
-    </script>
-  </body>
+      } catch (error) {
+        console.error(error);
+        alert("Terjadi kesalahan saat pendaftaran.");
+      }
+    });
+  </script>
+</body>
 </html>
-
-  
