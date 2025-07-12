@@ -1,251 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Creator Login - AMDF.GROUP</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-  <style>
-    :root {
-      --background-start: #f0f2f5;
-      --background-end: #e0e2e5;
-      --text-color: #333;
-      --header-bg: rgba(255, 255, 255, 0.9);
-      --container-bg: #ffffff;
-      --button-bg: #6a11cb;
-      --button-hover: #2575fc;
-      --error-color: #e74c3c;
-      --success-color: #2ecc71;
-    }
-    
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, var(--background-start), var(--background-end));
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    header {
-      background: var(--header-bg);
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .auth-container {
-      background: var(--container-bg);
-      border-radius: 8px;
-      padding: 2rem;
-      width: 100%;
-      max-width: 400px;
-      margin: 2rem auto;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .form-group {
-      margin-bottom: 1rem;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-    
-    input {
-      width: 100%;
-      padding: 0.8rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-    
-    button {
-      background: var(--button-bg);
-      color: white;
-      border: none;
-      padding: 1rem;
-      width: 100%;
-      border-radius: 4px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    
-    button:hover {
-      background: var(--button-hover);
-    }
-    
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    
-    .message {
-      padding: 1rem;
-      margin: 1rem 0;
-      border-radius: 4px;
-      display: none;
-    }
-    
-    .error {
-      background: #ffebee;
-      color: var(--error-color);
-      display: block;
-    }
-    
-    .success {
-      background: #e8f5e9;
-      color: var(--success-color);
-      display: block;
-    }
-    
-    .g-recaptcha {
-      margin: 1rem 0;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>AMDF.GROUP</h1>
-  </header>
+<html>
+  <head>
+    <title>Login dengan reCAPTCHA v2</title>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  </head>
+  <body>
+    <h2>Login Form</h2>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Password" required><br>
 
-  <main>
-    <div class="auth-container">
-      <h2>Creator Login</h2>
-      <div id="message" class="message"></div>
-      
-      <form id="loginForm">
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" required>
-        </div>
-        
-        <div class="g-recaptcha" 
-             data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" 
-             data-callback="onCaptchaVerified"></div>
-        
-        <button type="submit" id="submitBtn" disabled>Send Magic Link</button>
-      </form>
-    </div>
-  </main>
+      <!-- reCAPTCHA v2 -->
+      <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh"></div><br>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import { 
-      getAuth, 
-      isSignInWithEmailLink, 
-      signInWithEmailLink,
-      sendSignInLinkToEmail,
-      signInAnonymously
-    } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-    import { 
-      getFunctions, 
-      httpsCallable 
-    } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
+      <button type="submit">Login</button>
+    </form>
 
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
-      authDomain: "tamplatedoc.firebaseapp.com",
-      projectId: "tamplatedoc",
-      storageBucket: "tamplatedoc.appspot.com",
-      messagingSenderId: "264966107720",
-      appId: "1:264966107720:web:868abe93cdff209040de7d"
-    };
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+      import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const functions = getFunctions(app, 'asia-southeast1');
-    const verifyRecaptcha = httpsCallable(functions, 'verifyRecaptcha');
+      const firebaseConfig = {
+       apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
+    authDomain: "tamplatedoc.firebaseapp.com",
+     projectId: "tamplatedoc",
+      };
 
-    // DOM Elements
-    const loginForm = document.getElementById('loginForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const messageDiv = document.getElementById('message');
+      const app = initializeApp(firebaseConfig);
+      const functions = getFunctions(app);
 
-    // Initialize anonymous authentication
-    signInAnonymously(auth)
-      .then(() => console.log("Anonymous authentication successful"))
-      .catch(error => console.log("Anonymous auth optional:", error));
+      const loginForm = document.getElementById("loginForm");
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    // reCAPTCHA callback
-    window.onCaptchaVerified = (token) => {
-      submitBtn.disabled = false;
-    };
+        const recaptchaToken = document.querySelector("[name='g-recaptcha-response']").value;
 
-    // Form submission
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value.trim();
-      
-      try {
-        submitBtn.disabled = true;
-        showMessage("Processing your request...", "info");
-        
-        // Verify reCAPTCHA
-        const recaptchaResponse = await verifyRecaptcha({
-          token: grecaptcha.getResponse()
-        });
-        
-        if (!recaptchaResponse.data.success) {
-          throw new Error("reCAPTCHA verification failed");
+        if (!recaptchaToken) {
+          alert("Tolong selesaikan reCAPTCHA terlebih dahulu.");
+          return;
         }
-        
-        // Send magic link
-        const actionCodeSettings = {
-          url: window.location.href,
-          handleCodeInApp: true
-        };
-        
-        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-        localStorage.setItem('emailForSignIn', email);
-        
-        showMessage(`Magic link sent to ${email}. Check your inbox!`, "success");
-        loginForm.reset();
-        grecaptcha.reset();
-        submitBtn.disabled = true;
-        
-      } catch (error) {
-        console.error("Error:", error);
-        showMessage(error.message || "An error occurred. Please try again.", "error");
-        submitBtn.disabled = false;
-      }
-    });
 
-    // Handle email link sign-in
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      const email = localStorage.getItem('emailForSignIn') || 
-                   prompt("Please enter your email for confirmation:");
-      
-      if (email) {
-        signInWithEmailLink(auth, email, window.location.href)
-          .then(() => {
-            localStorage.removeItem('emailForSignIn');
-            window.location.href = '/creator-dashboard';
-          })
-          .catch(error => {
-            showMessage("Login failed: " + error.message, "error");
-          });
-      }
-    }
-
-    // Helper function to show messages
-    function showMessage(text, type) {
-      messageDiv.textContent = text;
-      messageDiv.className = type;
-      messageDiv.style.display = 'block';
-      
-      // Hide message after 5 seconds
-      setTimeout(() => {
-        messageDiv.style.display = 'none';
-      }, 5000);
-    }
-  </script>
-</body>
+        const verifyRecaptcha = httpsCallable(functions, 'verifyRecaptchaV2');
+        try {
+          const result = await verifyRecaptcha({ token: recaptchaToken });
+          if (result.data.success) {
+            alert("reCAPTCHA valid. Lanjutkan login...");
+            // Lanjut login Firebase Auth di sini jika ingin
+          } else {
+            alert("Verifikasi reCAPTCHA gagal.");
+          }
+        } catch (err) {
+          console.error("Error:", err);
+          alert("Terjadi kesalahan saat verifikasi.");
+        }
+      });
+    </script>
+  </body>
 </html>
+
+  
