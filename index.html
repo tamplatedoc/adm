@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AMDF.GROUP - Creator Portal</title>
+  <title>Creator Login - AMDF.GROUP</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -14,76 +14,124 @@
       --text-color: #333;
       --header-bg: rgba(255, 255, 255, 0.9);
       --container-bg: #ffffff;
-      --button-bg-gradient-start: #6a11cb;
-      --button-bg-gradient-end: #2575fc;
+      --button-bg: #6a11cb;
+      --button-hover: #2575fc;
+      --error-color: #e74c3c;
+      --success-color: #2ecc71;
     }
     
-    body.dark-mode {
-      --background-start: #1a1a2e;
-      --background-end: #16213e;
-      --text-color: #e0e0e0;
-      --header-bg: rgba(26, 26, 46, 0.9);
-      --container-bg: #22253b;
-      --button-bg-gradient-start: #8e2de2;
-      --button-bg-gradient-end: #4a00e0;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     body {
       font-family: 'Poppins', sans-serif;
       background: linear-gradient(135deg, var(--background-start), var(--background-end));
       min-height: 100vh;
+      margin: 0;
       display: flex;
       flex-direction: column;
-      transition: all 0.3s ease;
     }
-
+    
     header {
       background: var(--header-bg);
-      padding: 1rem 5%;
+      padding: 1rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-
+    
     .auth-container {
       background: var(--container-bg);
-      border-radius: 12px;
+      border-radius: 8px;
       padding: 2rem;
-      max-width: 450px;
       width: 100%;
+      max-width: 400px;
       margin: 2rem auto;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-
-    /* ... (Tambahkan styling lainnya sesuai kebutuhan) ... */
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    
+    button {
+      background: var(--button-bg);
+      color: white;
+      border: none;
+      padding: 1rem;
+      width: 100%;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: var(--button-hover);
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .message {
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .error {
+      background: #ffebee;
+      color: var(--error-color);
+      display: block;
+    }
+    
+    .success {
+      background: #e8f5e9;
+      color: var(--success-color);
+      display: block;
+    }
+    
+    .g-recaptcha {
+      margin: 1rem 0;
+    }
   </style>
 </head>
 <body>
   <header>
-    <a href="/" class="logo">AMDF.GROUP</a>
-    <button id="darkModeToggle">Toggle Dark Mode</button>
+    <h1>AMDF.GROUP</h1>
   </header>
 
   <main>
-    <section class="auth-container">
-      <h2 id="authTitle">Creator Login</h2>
-      <div id="message" class="message" style="display:none;"></div>
-
+    <div class="auth-container">
+      <h2>Creator Login</h2>
+      <div id="message" class="message"></div>
+      
       <form id="loginForm">
         <div class="form-group">
           <label for="email">Email</label>
           <input type="email" id="email" required>
         </div>
-        <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" data-callback="onCaptchaSuccess"></div>
+        
+        <div class="g-recaptcha" 
+             data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh" 
+             data-callback="onCaptchaVerified"></div>
+        
         <button type="submit" id="submitBtn" disabled>Send Magic Link</button>
       </form>
-    </section>
+    </div>
   </main>
 
   <script type="module">
@@ -100,7 +148,7 @@
       httpsCallable 
     } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-functions.js";
 
-    // Firebase Config
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
       authDomain: "tamplatedoc.firebaseapp.com",
@@ -116,63 +164,61 @@
     const functions = getFunctions(app, 'asia-southeast1');
     const verifyRecaptcha = httpsCallable(functions, 'verifyRecaptcha');
 
-    // Global Variables
-    let recaptchaToken = '';
-    const actionCodeSettings = {
-      url: window.location.href,
-      handleCodeInApp: true
-    };
-
     // DOM Elements
     const loginForm = document.getElementById('loginForm');
     const submitBtn = document.getElementById('submitBtn');
     const messageDiv = document.getElementById('message');
-    const darkModeToggle = document.getElementById('darkModeToggle');
 
-    // Initialize Anonymous Auth
-    signInAnonymously(auth).catch(error => {
-      console.log("Anonymous auth optional:", error);
-    });
+    // Initialize anonymous authentication
+    signInAnonymously(auth)
+      .then(() => console.log("Anonymous authentication successful"))
+      .catch(error => console.log("Anonymous auth optional:", error));
 
-    // reCAPTCHA Callback
-    window.onCaptchaSuccess = (token) => {
-      recaptchaToken = token;
+    // reCAPTCHA callback
+    window.onCaptchaVerified = (token) => {
       submitBtn.disabled = false;
     };
 
-    // Form Submission
+    // Form submission
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value.trim();
-
+      
       try {
         submitBtn.disabled = true;
-        showMessage("Processing...", "info");
-
-        // 1. Verify reCAPTCHA
-        const recaptchaResult = await verifyRecaptcha({ token: recaptchaToken });
+        showMessage("Processing your request...", "info");
         
-        if (!recaptchaResult.data.success) {
+        // Verify reCAPTCHA
+        const recaptchaResponse = await verifyRecaptcha({
+          token: grecaptcha.getResponse()
+        });
+        
+        if (!recaptchaResponse.data.success) {
           throw new Error("reCAPTCHA verification failed");
         }
-
-        // 2. Send magic link
+        
+        // Send magic link
+        const actionCodeSettings = {
+          url: window.location.href,
+          handleCodeInApp: true
+        };
+        
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
         localStorage.setItem('emailForSignIn', email);
         
-        showMessage(`Magic link sent to ${email}`, "success");
+        showMessage(`Magic link sent to ${email}. Check your inbox!`, "success");
         loginForm.reset();
         grecaptcha.reset();
+        submitBtn.disabled = true;
         
       } catch (error) {
-        showMessage(error.message || "Login failed", "error");
         console.error("Error:", error);
-      } finally {
+        showMessage(error.message || "An error occurred. Please try again.", "error");
         submitBtn.disabled = false;
       }
     });
 
-    // Handle Email Link Sign-in
+    // Handle email link sign-in
     if (isSignInWithEmailLink(auth, window.location.href)) {
       const email = localStorage.getItem('emailForSignIn') || 
                    prompt("Please enter your email for confirmation:");
@@ -189,25 +235,16 @@
       }
     }
 
-    // Helper Functions
+    // Helper function to show messages
     function showMessage(text, type) {
       messageDiv.textContent = text;
-      messageDiv.className = `message ${type}`;
+      messageDiv.className = type;
       messageDiv.style.display = 'block';
+      
+      // Hide message after 5 seconds
       setTimeout(() => {
         messageDiv.style.display = 'none';
       }, 5000);
-    }
-
-    // Dark Mode Toggle
-    darkModeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-    });
-
-    // Initialize Dark Mode
-    if (localStorage.getItem('darkMode') === 'true') {
-      document.body.classList.add('dark-mode');
     }
   </script>
 </body>
