@@ -394,9 +394,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-        import { getDatabase, ref as rtdbRef, set as rtdbSet, get as rtdbGet, child as rtdbChild } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+        import { getDatabase, ref as rtdbRef, set as rtdbSet, get as rtdbGet } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
@@ -414,6 +414,7 @@
         const db = getFirestore(app);
         const rtdb = getDatabase(app);
 
+        // --- Dark Mode Toggle ---
         function applyTheme() {
             if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark-mode');
@@ -431,6 +432,7 @@
         }
         document.addEventListener('DOMContentLoaded', applyTheme);
 
+        // --- DOM Elements ---
         const authTitle = document.getElementById('authTitle');
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
@@ -438,11 +440,13 @@
         const toggleText = document.getElementById('toggleText');
         const messageDiv = document.getElementById('message');
 
+        // --- Firebase Action Code Settings for Magic Link ---
         const actionCodeSettings = {
-            url: window.location.origin + '/web_creator.html', // URL untuk redirect setelah verifikasi
+            url: window.location.origin + '/web_creator.html', // URL to redirect after verification
             handleCodeInApp: true,
         };
 
+        // --- Toggle between Login and Register Forms ---
         toggleAuth.addEventListener('click', (e) => {
             e.preventDefault();
             if (loginForm.style.display === 'none') {
@@ -461,13 +465,14 @@
             messageDiv.style.display = 'none';
         });
 
+        // --- Show Message Function ---
         function showMessage(text, type) {
             messageDiv.textContent = text;
             messageDiv.className = `message ${type}`;
             messageDiv.style.display = 'block';
         }
 
-        // Function to generate a unique 4-character ID (alphanumeric)
+        // --- Generate Unique Creator ID ---
         async function generateUniqueCreatorId() {
             const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             let id = '';
@@ -493,7 +498,7 @@
             return id;
         }
 
-
+        // --- Register Form Submission ---
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('registerEmail').value;
@@ -519,13 +524,13 @@
                 // 2. Generate unique Creator ID
                 const creatorId = await generateUniqueCreatorId();
 
-                // 3. Store data in Realtime Database (for sensitive info)
+                // 3. Store data in Realtime Database (for sensitive info like PIN and WhatsApp)
                 await rtdbSet(rtdbRef(rtdb, `creators/${user.uid}`), {
                     email: email,
-                    pin: pin, // Storing PIN for login (as requested)
+                    pin: pin,
                     whatsapp: whatsapp,
                     creatorId: creatorId,
-                    emailVerified: false // Track email verification status
+                    emailVerified: false // Set to false initially
                 });
 
                 // 4. Store public data in Firestore (for author name and creator ID)
@@ -541,10 +546,17 @@
                 // Save email to local storage to retrieve it on the verification page
                 localStorage.setItem('emailForSignIn', email);
 
-                showMessage("Registration successful! A verification link has been sent to your email. Please click the link to complete registration and log in.", "success");
-                
-                // Clear the form after sending email
-                e.target.reset();
+                showMessage("Registration successful! Please check your email for a verification link to complete your registration.", "success");
+                // After successful registration, redirect to login page
+                setTimeout(() => {
+                    loginForm.style.display = 'block';
+                    registerForm.style.display = 'none';
+                    authTitle.textContent = 'Login as Creator';
+                    toggleText.textContent = "Don't have an account?";
+                    toggleAuth.textContent = 'Register here';
+                    messageDiv.style.display = 'none'; // Clear message after redirect
+                    e.target.reset(); // Clear the form
+                }, 3000); // Redirect after 3 seconds
 
             } catch (error) {
                 let errorMessage = "Registration failed. Please try again.";
@@ -556,9 +568,11 @@
                     errorMessage = "PIN is too weak. Please use a stronger combination (Firebase Auth sees PIN as password).";
                 }
                 showMessage(errorMessage, "error");
+                console.error("Registration error:", error);
             }
         });
 
+        // --- Login Form Submission ---
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
@@ -573,41 +587,25 @@
                 const userCredential = await signInWithEmailAndPassword(auth, email, pin);
                 const user = userCredential.user;
 
-                // Check if email is verified
-                if (!user.emailVerified) {
-                    showMessage("Your email is not verified. Please check your inbox for a verification link.", "error");
-                    await signOut(auth); // Log out the user if email is not verified
+                // Fetch user data from Realtime Database to check emailVerified status
+                const creatorRtdbRef = rtdbRef(rtdb, `creators/${user.uid}`);
+                const snapshot = await rtdbGet(creatorRtdbRef);
+
+                let isEmailVerifiedInRTDB = false;
+                if (snapshot.exists()) {
+                    isEmailVerifiedInRTDB = snapshot.val().emailVerified;
+                }
+
+                if (!user.emailVerified || !isEmailVerifiedInRTDB) {
+                    // If Firebase Auth says not verified OR our RTDB says not verified
+                    // This covers cases where email is verified via magic link but RTDB not updated yet
+                    showMessage("Your email is not verified. A verification link has been sent to your email. Please click the link to continue.", "error");
+                    await sendSignInLinkToEmail(auth, email, actionCodeSettings); // Resend magic link
+                    await signOut(auth); // Log out the user to force verification via link
                     return;
                 }
 
-                // Update Realtime DB status to true if verified via link later
-                const creatorRtdbRef = rtdbRef(rtdb, `creators/${user.uid}`);
-                const snapshot = await rtdbGet(creatorRtdbRef);
-                if (snapshot.exists()) {
-                    if (!snapshot.val().emailVerified) {
-                         // This path implies user signed in with email/pin after external magic link click
-                        await rtdbSet(creatorRtdbRef, { ...snapshot.val(), emailVerified: true });
-                    }
-                } else {
-                    // This case should ideally not happen if RTDB data is stored on register
-                    // But as a fallback, create a basic entry if not found.
-                    const authorDocSnap = await getDoc(doc(db, "authors", user.uid));
-                    let creatorId = '';
-                    if (authorDocSnap.exists()) {
-                        creatorId = authorDocSnap.data().creatorId;
-                    } else {
-                        creatorId = await generateUniqueCreatorId(); // Generate if not found
-                        await setDoc(doc(db, "authors", user.uid), { name: "New Creator", creatorId: creatorId, uid: user.uid });
-                    }
-                    await rtdbSet(creatorRtdbRef, {
-                        email: user.email,
-                        pin: pin, // Store pin from current login
-                        whatsapp: 'N/A', // Placeholder if not available
-                        creatorId: creatorId,
-                        emailVerified: true
-                    });
-                }
-                
+                // If email is verified in Auth and RTDB, proceed to web_creator.html
                 showMessage("Login successful! Redirecting to creator page...", "success");
                 setTimeout(() => {
                     window.location.href = 'web_creator.html';
@@ -615,52 +613,60 @@
 
             } catch (error) {
                 let errorMessage = "Login failed. Invalid email or PIN.";
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                     errorMessage = "Invalid email or PIN. Please check your credentials.";
                 } else if (error.code === 'auth/invalid-email') {
                     errorMessage = "Invalid email address format.";
                 }
                 showMessage(errorMessage, "error");
+                console.error("Login error:", error);
             }
         });
 
-        // Handle magic link sign-in when the page loads
-        onAuthStateChanged(auth, async (user) => {
-            if (user && user.emailVerified && !localStorage.getItem('processingMagicLink')) {
-                // If user is already logged in and verified, redirect to creator page
-                // And not currently processing a magic link (to prevent double redirects)
-                const creatorRtdbRef = rtdbRef(rtdb, `creators/${user.uid}`);
-                const snapshot = await rtdbGet(creatorRtdbRef);
-                if (snapshot.exists() && !snapshot.val().emailVerified) {
-                    await rtdbSet(creatorRtdbRef, { ...snapshot.val(), emailVerified: true });
-                }
-                window.location.href = 'web_creator.html';
-            }
-        });
-
+        // --- Handle Magic Link Sign-In on Page Load ---
+        // This runs when the page is loaded after clicking a magic link
         if (isSignInWithEmailLink(auth, window.location.href)) {
             let email = localStorage.getItem('emailForSignIn');
             if (!email) {
                 email = prompt('Please provide your email for confirmation:');
             }
             if (email) {
-                localStorage.setItem('processingMagicLink', 'true'); // Flag to prevent immediate redirect
+                localStorage.setItem('processingMagicLink', 'true'); // Flag to prevent immediate redirect by onAuthStateChanged
                 showMessage("Verifying your email. Please wait...", "success");
                 signInWithEmailLink(auth, email, window.location.href)
                     .then(async (result) => {
-                        // Update emailVerified status in Realtime Database
                         const user = result.user;
+                        // Update emailVerified status in Realtime Database after successful magic link sign-in
                         const creatorRtdbRef = rtdbRef(rtdb, `creators/${user.uid}`);
                         const snapshot = await rtdbGet(creatorRtdbRef);
                         if (snapshot.exists()) {
                             await rtdbSet(creatorRtdbRef, { ...snapshot.val(), emailVerified: true });
+                        } else {
+                            // Fallback: If for some reason RTDB entry is missing, create a basic one
+                            const authorDocSnap = await getDoc(doc(db, "authors", user.uid));
+                            let creatorId = '';
+                            if (authorDocSnap.exists()) {
+                                creatorId = authorDocSnap.data().creatorId;
+                            } else {
+                                // This scenario should ideally not happen if registration worked
+                                creatorId = await generateUniqueCreatorId();
+                                await setDoc(doc(db, "authors", user.uid), { name: "Creator", creatorId: creatorId, uid: user.uid });
+                            }
+                            await rtdbSet(creatorRtdbRef, {
+                                email: user.email,
+                                pin: 'N/A', // PIN not available from magic link sign-in
+                                whatsapp: 'N/A',
+                                creatorId: creatorId,
+                                emailVerified: true
+                            });
                         }
+
                         localStorage.removeItem('emailForSignIn');
                         localStorage.removeItem('processingMagicLink');
                         showMessage("Email successfully verified! Redirecting to creator page...", "success");
                         setTimeout(() => {
                             window.location.href = 'web_creator.html';
-                        }, 1000);
+                        }, 1500);
                     })
                     .catch((error) => {
                         localStorage.removeItem('emailForSignIn');
@@ -668,6 +674,8 @@
                         let errorMessage = "Error verifying email. Please try again or log in directly.";
                         if (error.code === 'auth/invalid-action-code') {
                             errorMessage = "Invalid or expired verification link. Please register again.";
+                        } else if (error.code === 'auth/invalid-email') {
+                            errorMessage = "The email address associated with this link is invalid.";
                         }
                         showMessage(errorMessage, "error");
                         console.error("Error signing in with email link:", error);
@@ -676,6 +684,26 @@
                 showMessage("Email not provided for verification.", "error");
             }
         }
+
+        // --- On Auth State Changed Listener ---
+        // This listener checks the user's authentication status globally
+        onAuthStateChanged(auth, async (user) => {
+            // Only proceed if a user is logged in, email is verified, and we are not currently processing a magic link
+            if (user && user.emailVerified && !localStorage.getItem('processingMagicLink')) {
+                const creatorRtdbRef = rtdbRef(rtdb, `creators/${user.uid}`);
+                const snapshot = await rtdbGet(creatorRtdbRef);
+                
+                // Ensure RTDB emailVerified status is updated if user is verified via Auth state
+                if (snapshot.exists() && !snapshot.val().emailVerified) {
+                    await rtdbSet(creatorRtdbRef, { ...snapshot.val(), emailVerified: true });
+                }
+                
+                // Redirect only if not already on web_creator.html to avoid unnecessary redirects
+                if (window.location.pathname !== '/web_creator.html') {
+                    window.location.href = 'web_creator.html';
+                }
+            }
+        });
     </script>
 </body>
 </html>
