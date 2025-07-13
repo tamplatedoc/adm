@@ -1,70 +1,409 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Register dengan reCAPTCHA</title>
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otentikasi Tautan Ajaib Firebase</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: #3b82f6;
+            color: #ffffff;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .btn-secondary {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: #ef4444;
+            color: #ffffff;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #dc2626;
+        }
+        .message-box {
+            background-color: #dbeafe;
+            color: #1e40af;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .error-box {
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-  <h2>Form Register</h2>
-  <form id="registerForm">
-    <input type="email" id="email" placeholder="Email" required><br>
-    <input type="password" id="password" placeholder="Password" required><br>
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p class="mt-4 text-lg text-gray-700">Memuat...</p>
+    </div>
 
-    <!-- reCAPTCHA v2 Checkbox -->
-    <div class="g-recaptcha" data-sitekey="6LeLlYArAAAAAOpJ7LHBYPS7xU1RLfQHuDd8jynh"></div><br>
+    <div id="authContainer" class="container">
+        <div class="card">
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Masuk atau Daftar</h2>
+            <div id="message" class="message-box hidden"></div>
+            <div id="error" class="error-box hidden"></div>
+            <form id="authForm" class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Alamat Email</label>
+                    <input type="email" id="email" class="input-field" placeholder="email.anda@contoh.com" required>
+                </div>
+                <button type="submit" class="btn-primary">Kirim Tautan Ajaib</button>
+            </form>
+            <p class="text-sm text-gray-600 text-center mt-4">
+                Periksa email Anda untuk tautan ajaib untuk masuk atau membuat akun.
+            </p>
+        </div>
+    </div>
 
-    <button type="submit">Daftar</button>
-  </form>
+    <div id="mainContainer" class="container hidden">
+        <div class="card">
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Selamat Datang!</h2>
+            <p class="text-gray-700 text-center mb-4">Anda berhasil masuk.</p>
+            <p id="userEmailDisplay" class="text-lg font-medium text-blue-600 text-center mb-6"></p>
+            <p id="userIdDisplay" class="text-sm text-gray-500 text-center mb-6"></p>
+            <button id="logoutButton" class="btn-secondary">Keluar</button>
+        </div>
+    </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-functions.js";
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, isSignInWithEmailLink, signInWithEmailLink, sendSignInLinkToEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
-      authDomain: "tamplatedoc.firebaseapp.com",
-      databaseURL: "https://tamplatedoc-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "tamplatedoc",
-      storageBucket: "tamplatedoc.firebasestorage.app",
-      messagingSenderId: "264966107720",
-      appId: "1:264966107720:web:868abe93cdff209040de7d",
-      measurementId: "G-S5WTZ7S5PG"
-    };
+        // Konfigurasi Firebase aplikasi web Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeiLybtGc6evATj5O7M1FiJd1GPYd-rYc",
+            authDomain: "tamplatedoc.firebaseapp.com",
+            databaseURL: "https://tamplatedoc-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "tamplatedoc",
+            storageBucket: "tamplatedoc.firebasestorage.app",
+            messagingSenderId: "264966107720",
+            appId: "1:264966107720:web:868abe93cdff209040de7d",
+            measurementId: "G-S5WTZ7S5PG"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const functions = getFunctions(app);
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
 
-    const registerForm = document.getElementById("registerForm");
-    registerForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+        // Elemen DOM
+        const authContainer = document.getElementById('authContainer');
+        const mainContainer = document.getElementById('mainContainer');
+        const authForm = document.getElementById('authForm');
+        const emailInput = document.getElementById('email');
+        const messageBox = document.getElementById('message');
+        const errorBox = document.getElementById('error');
+        const userEmailDisplay = document.getElementById('userEmailDisplay');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const logoutButton = document.getElementById('logoutButton');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const token = document.querySelector("[name='g-recaptcha-response']").value;
+        // Pengaturan kode tindakan untuk tautan email
+        const actionCodeSettings = {
+            // URL yang ingin Anda arahkan kembali. Ini harus ada dalam daftar domain yang diotorisasi di Konsol Firebase.
+            // Menggunakan authDomain dari konfigurasi Firebase untuk memastikan URL valid.
+            url: `https://${firebaseConfig.authDomain}`,
+            handleCodeInApp: true, // Ini harus benar.
+        };
 
-      if (!token) {
-        alert("Tolong centang reCAPTCHA terlebih dahulu.");
-        return;
-      }
-
-      try {
-        const verifyRecaptcha = httpsCallable(functions, "verifyRecaptchaV2");
-        const result = await verifyRecaptcha({ token });
-
-        if (result.data.success) {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          alert("Pendaftaran berhasil untuk: " + userCredential.user.email);
-        } else {
-          alert("Verifikasi reCAPTCHA gagal. Silakan coba lagi.");
+        /**
+         * Menampilkan pesan kepada pengguna.
+         * @param {string} msg - Pesan yang akan ditampilkan.
+         * @param {boolean} isError - True jika itu pesan kesalahan, false jika tidak.
+         */
+        function showMessage(msg, isError = false) {
+            if (isError) {
+                errorBox.textContent = msg;
+                errorBox.classList.remove('hidden');
+                messageBox.classList.add('hidden');
+            } else {
+                messageBox.textContent = msg;
+                messageBox.classList.remove('hidden');
+                errorBox.classList.add('hidden');
+            }
+            // Sembunyikan pesan setelah 5 detik
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+                errorBox.classList.add('hidden');
+            }, 5000);
         }
-      } catch (error) {
-        console.error(error);
-        alert("Terjadi kesalahan saat pendaftaran.");
-      }
-    });
-  </script>
+
+        /**
+         * Menampilkan overlay pemuatan.
+         */
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        /**
+         * Menyembunyikan overlay pemuatan.
+         */
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        /**
+         * Menyimpan data pengguna ke Firebase Realtime Database.
+         * @param {string} userId - ID unik pengguna.
+         * @param {string} email - Alamat email pengguna.
+         */
+        async function saveUserData(userId, email) {
+            try {
+                // Buat jalur untuk data publik sesuai instruksi
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const userRef = ref(database, `artifacts/${appId}/public/data/users/${userId}/profile`);
+                await set(userRef, {
+                    email: email,
+                    createdAt: new Date().toISOString()
+                });
+                console.log("Data pengguna disimpan ke Realtime Database.");
+            } catch (error) {
+                console.error("Kesalahan saat menyimpan data pengguna ke Realtime Database:", error);
+                showMessage("Gagal menyimpan data pengguna.", true);
+            }
+        }
+
+        /**
+         * Mengambil data pengguna dari Firebase Realtime Database.
+         * @param {string} userId - ID unik pengguna.
+         * @returns {Promise<Object|null>} - Data profil pengguna atau null jika tidak ditemukan.
+         */
+        async function getUserData(userId) {
+            try {
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const userRef = ref(database, `artifacts/${appId}/public/data/users/${userId}/profile`);
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) {
+                    return snapshot.val();
+                } else {
+                    console.log("Tidak ada data pengguna ditemukan untuk ID ini.");
+                    return null;
+                }
+            } catch (error) {
+                console.error("Kesalahan saat mengambil data pengguna dari Realtime Database:", error);
+                showMessage("Gagal mengambil data pengguna.", true);
+                return null;
+            }
+        }
+
+        /**
+         * Menangani pengiriman tautan masuk ke email pengguna.
+         * @param {Event} event - Acara pengiriman formulir.
+         */
+        authForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = emailInput.value;
+
+            if (!email) {
+                showMessage("Harap masukkan alamat email Anda.", true);
+                return;
+            }
+
+            showLoading();
+            try {
+                // Simpan email di penyimpanan lokal agar kita dapat mengambilnya saat pengguna mengklik tautan
+                localStorage.setItem('emailForSignIn', email);
+                await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+                showMessage(`Tautan ajaib telah dikirim ke ${email}. Harap periksa kotak masuk dan folder spam Anda.`);
+                emailInput.value = ''; // Bersihkan kolom input
+            } catch (error) {
+                console.error("Kesalahan saat mengirim tautan ajaib:", error);
+                let errorMessage = "Gagal mengirim tautan ajaib. Silakan coba lagi.";
+                if (error.code === 'auth/invalid-email') {
+                    errorMessage = "Format alamat email tidak valid.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorMessage = "Terlalu banyak permintaan. Silakan coba lagi nanti.";
+                } else if (error.code === 'auth/invalid-continue-uri') {
+                    errorMessage = "URL pengalihan tidak valid. Harap pastikan domain Anda terdaftar di konsol Firebase.";
+                }
+                showMessage(errorMessage, true);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        /**
+         * Menangani proses masuk saat pengguna kembali setelah mengklik tautan email.
+         */
+        async function handleEmailLinkSignIn() {
+            showLoading();
+            try {
+                // Konfirmasi bahwa tautan tersebut adalah tautan masuk dengan email.
+                if (isSignInWithEmailLink(auth, window.location.href)) {
+                    let email = localStorage.getItem('emailForSignIn');
+                    if (!email) {
+                        // Pengguna membuka tautan di perangkat atau browser yang berbeda, atau menghapus penyimpanan lokal.
+                        // Minta email jika tidak ditemukan di penyimpanan lokal.
+                        email = prompt('Harap berikan email Anda untuk konfirmasi:');
+                        if (!email) {
+                            showMessage("Email diperlukan untuk menyelesaikan proses masuk.", true);
+                            hideLoading();
+                            return;
+                        }
+                    }
+
+                    // Selesaikan proses masuk dengan tautan email.
+                    const result = await signInWithEmailLink(auth, email, window.location.href);
+                    // Hapus email dari penyimpanan.
+                    localStorage.removeItem('emailForSignIn');
+
+                    if (result.user) {
+                        console.log("Pengguna berhasil masuk:", result.user);
+                        // Simpan data pengguna ke Realtime Database jika itu pengguna baru atau perbarui yang sudah ada
+                        const existingUserData = await getUserData(result.user.uid);
+                        if (!existingUserData) {
+                            await saveUserData(result.user.uid, result.user.email);
+                        }
+                        showMessage("Berhasil masuk!", false);
+                        // Listener onAuthStateChanged akan menangani pembaruan UI dan pengalihan
+                    }
+                }
+            } catch (error) {
+                console.error("Kesalahan saat masuk dengan tautan email:", error);
+                let errorMessage = "Gagal masuk. Tautan mungkin tidak valid atau sudah kedaluwarsa.";
+                if (error.code === 'auth/invalid-action-code') {
+                    errorMessage = "Tautan verifikasi tidak valid atau sudah kedaluwarsa.";
+                } else if (error.code === 'auth/user-disabled') {
+                    errorMessage = "Akun Anda telah dinonaktifkan.";
+                } else if (error.code === 'auth/invalid-continue-uri') {
+                    errorMessage = "URL pengalihan tidak valid. Harap pastikan domain Anda terdaftar di konsol Firebase.";
+                }
+                showMessage(errorMessage, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Dengarkan perubahan status otentikasi
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Pengguna masuk
+                console.log("Status otentikasi berubah: Pengguna masuk.", user);
+                authContainer.classList.add('hidden');
+                mainContainer.classList.remove('hidden');
+                userEmailDisplay.textContent = `Email: ${user.email}`;
+                userIdDisplay.textContent = `ID Pengguna: ${user.uid}`;
+
+                // Pastikan data pengguna ada di Realtime Database
+                const existingUserData = await getUserData(user.uid);
+                if (!existingUserData) {
+                    await saveUserData(user.uid, user.email);
+                }
+            } else {
+                // Pengguna keluar
+                console.log("Status otentikasi berubah: Pengguna keluar.");
+                authContainer.classList.remove('hidden');
+                mainContainer.classList.add('hidden');
+                userEmailDisplay.textContent = '';
+                userIdDisplay.textContent = '';
+            }
+            hideLoading(); // Sembunyikan pemuatan setelah status otentikasi ditentukan
+        });
+
+        // Tangani keluar
+        logoutButton.addEventListener('click', async () => {
+            showLoading();
+            try {
+                await signOut(auth);
+                showMessage("Anda telah keluar.", false);
+            } catch (error) {
+                console.error("Kesalahan saat keluar:", error);
+                showMessage("Gagal keluar. Silakan coba lagi.", true);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Saat halaman dimuat, periksa apakah itu tautan masuk
+        window.onload = () => {
+            if (isSignInWithEmailLink(auth, window.location.href)) {
+                handleEmailLinkSignIn();
+            } else {
+                // Jika bukan tautan masuk, pastikan pemuatan disembunyikan jika tidak ada tindakan otentikasi yang tertunda
+                hideLoading();
+            }
+        };
+
+    </script>
 </body>
 </html>
